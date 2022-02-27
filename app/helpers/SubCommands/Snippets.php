@@ -2,6 +2,7 @@
 
 use App\Dto\Component;
 use App\Dto\Directive;
+use Illuminate\Support\Facades\File;
 
 include_once(__DIR__ . '/../../Dto/Snippet.php');
 include_once(__DIR__ . '/../../Dto/SnippetDto.php');
@@ -17,8 +18,6 @@ include_once(__DIR__ . '/../../helpers/invade.php');
 function handle()
 {
     $blade = app('blade.compiler');
-    $livewire = app('livewire');
-    $livewireComponentFinder = app(\Livewire\LivewireComponentsFinder::class);
 
     // Done
     $directives = $blade->getCustomDirectives();
@@ -26,7 +25,6 @@ function handle()
 
     // TODO
     $namespaced = invade($blade)->classComponentNamespaces;
-    $livewireAliased = $livewire->getComponentAliases();
 
     // TODO components in the view/components folder
 
@@ -57,13 +55,24 @@ function handle()
     }
 
     // Livewire
-    foreach ($livewireComponentFinder->getManifest() as $name => $class) {
-        $snippet = new Component();
-        $snippet->livewire = true;
-        $snippet->name = "livewire:$name";
-        $snippet->file = $class;
-        $snippet->arguments = getPossibleAttributes($class);
-        $data[] = $snippet;
+    if (class_exists(\Livewire\LivewireComponentsFinder::class)) {
+        $livewire = app('livewire');
+
+
+        // Todo
+        $livewireAliased = $livewire->getComponentAliases();
+
+        if (File::exists(base_path('app/Http/Livewire'))) {
+            $livewireComponentFinder = app(\Livewire\LivewireComponentsFinder::class);
+            foreach ($livewireComponentFinder->getManifest() as $name => $class) {
+                $snippet = new Component();
+                $snippet->livewire = true;
+                $snippet->name = "livewire:$name";
+                $snippet->file = $class;
+                $snippet->arguments = getPossibleAttributes($class);
+                $data[] = $snippet;
+            }
+        }
     }
 
     // Regular blade components

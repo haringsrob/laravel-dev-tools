@@ -17,6 +17,8 @@ Make sure your global composer bin directory is linked in your `$PATH`.
 
 ### Snippets
 
+[![asciicast](https://asciinema.org/a/m4CnivSpOhXiCzi2M0wgUeRvg.svg)](https://asciinema.org/a/m4CnivSpOhXiCzi2M0wgUeRvg)
+
 ```
 laravel-dev-generators snippets [path to laravel install]
 ```

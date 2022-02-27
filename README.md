@@ -1,4 +1,4 @@
-# Laravel deve generators
+# Laravel dev generators
 
 Laravel dev generators is a globally installed package that you can use to ease your Laravel development.
 

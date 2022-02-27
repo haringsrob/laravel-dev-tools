@@ -19,7 +19,7 @@ class GenerateSnippets extends Command
      *
      * @var string
      */
-    protected $signature = 'snippets {path}';
+    protected $signature = 'snippets {path} {--vscode}';
 
     /**
      * The description of the command.
@@ -36,15 +36,27 @@ class GenerateSnippets extends Command
     public function handle()
     {
         $path = $this->argument('path', null);
+        $vscode = $this->option('vscode', null);
         $runner = base_path('app/helpers/runner.php');
         $output = shell_exec("php $runner $path snippets");
 
-        $targetPath = $path . '/vendor/haringsrob/laravel-dev-generators/snippets/';
+        if ($vscode) {
+            $targetPath = $path . '/.vscode/';
 
-        if (!File::exists($targetPath)) {
-            File::makeDirectory($targetPath, 0755, true);
+            if (!File::exists($targetPath)) {
+                File::makeDirectory($targetPath, 0755, true);
+            }
+
+            file_put_contents($targetPath . '/blade.code-snippets', $output);
+
+            $this->line('.vscode/blade.code-snippets created.');
+        } else {
+            $targetPath = $path . '/vendor/haringsrob/laravel-dev-generators/snippets/';
+
+            if (!File::exists($targetPath)) {
+                File::makeDirectory($targetPath, 0755, true);
+            }
+            file_put_contents($targetPath . '/blade.json', $output);
         }
-
-        file_put_contents($targetPath . 'blade.json', $output);
     }
 }

@@ -20,7 +20,7 @@ Make sure your global composer bin directory is linked in your `$PATH`.
 [![asciicast](https://asciinema.org/a/m4CnivSpOhXiCzi2M0wgUeRvg.svg)](https://asciinema.org/a/m4CnivSpOhXiCzi2M0wgUeRvg)
 
 ```
-laravel-dev-generators snippets [path to laravel install]
+laravel-dev-generators snippets [path to laravel install] (optional)[--vscode]
 ```
 
 This will generate snippets for blade components, blade directives and livewire components in:
@@ -28,6 +28,20 @@ This will generate snippets for blade components, blade directives and livewire 
 ```
 projectpath/vendor/haringsrob/laravel-dev-generators/snippets/blade.json
 ```
+
+#### vscode
+
+Simply run:
+
+```
+laravel-dev-generators snippets [path to laravel install] --vscode
+```
+
+Then the suggestions will start.
+
+For now you still need to rerun this command when new blade components are generated.
+
+#### VIM
 
 Now you can use that path to load snippets for example using **vim-vsnip** `init.lua`:
 

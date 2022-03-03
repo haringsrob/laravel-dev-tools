@@ -3,12 +3,14 @@
 namespace App;
 
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class Logger
 {
     public static function getLogger(): LoggerInterface
     {
-        return new \Wa72\SimpleLogger\FileLogger(__DIR__ . '/../log.txt');
+        return new NullLogger();
+        /* return new \Wa72\SimpleLogger\FileLogger(__DIR__ . '/../log.txt'); */
     }
 
     public static function logdbg($data): void

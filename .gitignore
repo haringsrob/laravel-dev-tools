@@ -4,3 +4,4 @@
 /.vagrant
 .phpunit.result.cache
 log.txt
+builds

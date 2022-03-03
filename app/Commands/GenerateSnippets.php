@@ -2,15 +2,10 @@
 
 namespace App\Commands;
 
-use App\Dto\Component;
-use App\Dto\Directive;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\File;
 use LaravelZero\Framework\Commands\Command;
 
 use function base_path;
-use function exec;
-use function invade;
 
 class GenerateSnippets extends Command
 {
@@ -19,7 +14,7 @@ class GenerateSnippets extends Command
      *
      * @var string
      */
-    protected $signature = 'snippets {path} {--vscode}';
+    protected $signature = 'snippets {path} {--vscode} {--return}';
 
     /**
      * The description of the command.
@@ -35,10 +30,12 @@ class GenerateSnippets extends Command
      */
     public function handle()
     {
-        $path = $this->argument('path', null);
-        $vscode = $this->option('vscode', null);
+        $path = $this->argument('path');
+        $vscode = $this->option('vscode') ?? false;
+        $return = $this->option('return') ?? false;
         $runner = base_path('app/helpers/runner.php');
-        $output = shell_exec("php $runner $path snippets");
+        $options = $return ? '' : 'snippets=true';
+        $output = shell_exec("php $runner $path snippets $options");
 
         if ($vscode) {
             $targetPath = $path . '/.vscode/';
@@ -50,6 +47,8 @@ class GenerateSnippets extends Command
             file_put_contents($targetPath . '/blade.code-snippets', $output);
 
             $this->line('.vscode/blade.code-snippets created.');
+        } elseif ($return) {
+            echo $output;
         } else {
             $targetPath = $path . '/vendor/haringsrob/laravel-dev-generators/snippets/';
 

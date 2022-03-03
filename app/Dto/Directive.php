@@ -19,4 +19,13 @@ class Directive implements SnippetDto
 
         return new Snippet($this->name, "@{$this->name}", $body);
     }
+
+    public function toArray(): array
+    {
+        return [
+            'name' => $this->name,
+            'hasEnd' => $this->hasEnd,
+            'type' => self::TYPE_DIRECTIVE,
+        ];
+    }
 }

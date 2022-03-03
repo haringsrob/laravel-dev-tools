@@ -2,6 +2,7 @@
 
 use App\Dto\Component;
 use App\Dto\Directive;
+use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\Support\Facades\File;
 
 include_once(__DIR__ . '/../../Dto/Snippet.php');
@@ -9,33 +10,82 @@ include_once(__DIR__ . '/../../Dto/SnippetDto.php');
 include_once(__DIR__ . '/../../Dto/Directive.php');
 include_once(__DIR__ . '/../../Dto/Component.php');
 include_once(__DIR__ . '/../../helpers/invade.php');
+include_once(__DIR__ . '/../../Reflection/ReflectionClass.php');
+include_once(__DIR__ . '/../../Reflection/ReflectionMethod.php');
+include_once(__DIR__ . '/../../Reflection/StringHelper.php');
 
 /**
  * Execute the console command.
  *
  * @return mixed
  */
-function handle()
+function handle(array $options = [])
 {
-    $blade = app('blade.compiler');
+    $arrayFinal = [];
+    if (false) {
+        foreach (getDirectives() as $final) {
+            if ($options['snippets'] ?? false) {
+                $arrayFinal[$final->name] = $final->toEntry();
+            } else {
+                $arrayFinal[$final->name] = $final->toArray();
+            }
+        }
 
-    // Done
-    $directives = $blade->getCustomDirectives();
-    $aliased = invade($blade)->classComponentAliases;
+        foreach (getLivewireComponents() as $final) {
+            if ($options['snippets'] ?? false) {
+                $arrayFinal[$final->name] = $final->toEntry();
+            } else {
+                $arrayFinal[$final->name] = $final->toArray();
+            }
+        }
+    }
 
-    // TODO
-    $namespaced = invade($blade)->classComponentNamespaces;
+    foreach (getBladeComponents() as $final) {
+        if ($options['snippets'] ?? false) {
+            $arrayFinal[$final->name] = $final->toEntry();
+        } else {
+            $arrayFinal[$final->name] = $final->toArray();
+        }
+    }
 
-    // TODO components in the view/components folder
+    echo json_encode($arrayFinal, JSON_PRETTY_PRINT);
+}
 
-    /** @var SnippetData $data */
+/**
+ * @return Component[]
+ */
+function getLivewireComponents(): array
+{
     $data = [];
+    if (class_exists(\Livewire\LivewireComponentsFinder::class)) {
+        $livewire = app('livewire');
 
-    $ignore = ['Illuminate\\View\\DynamicComponent'];
+        // Todo
+        $livewireAliased = $livewire->getComponentAliases();
 
+        if (File::exists(base_path('app/Http/Livewire'))) {
+            $livewireComponentFinder = app(\Livewire\LivewireComponentsFinder::class);
+            foreach ($livewireComponentFinder->getManifest() as $name => $class) {
+                $data[] = new Component(
+                    name: "livewire:$name",
+                    file: getClassFile($class),
+                    class: $class,
+                    livewire: true
+                );
+            }
+        }
+    }
+
+    return $data;
+}
+
+/**
+ * @return Directive[]
+ */
+function getDirectives(): array
+{
     $directivesList = [];
-
-    // Directives
+    $directives = app('blade.compiler')->getCustomDirectives();
     foreach (array_keys($directives) as $name) {
         if (strpos($name, 'end') === 0) {
             continue;
@@ -48,64 +98,128 @@ function handle()
     foreach (array_keys($directives) as $name) {
         if (strpos($name, 'end') === 0) {
             $name = ltrim($name, 'end');
-            if ($directive = $directivesList[$name]) {
-                $directive->hasEnd = true;
-            }
+            $directivesList[$name]->hasEnd = true;
         }
     }
 
-    // Livewire
-    if (class_exists(\Livewire\LivewireComponentsFinder::class)) {
-        $livewire = app('livewire');
+    return $directivesList;
+}
 
+/**
+ * @return Component[]
+ */
+function getBladeComponents(): array
+{
+    $data = [];
 
-        // Todo
-        $livewireAliased = $livewire->getComponentAliases();
+    $blade = getBlade();
+    $tagCompiler = new \Illuminate\View\Compilers\ComponentTagCompiler(
+        $blade->getClassComponentAliases(),
+        $blade->getClassComponentNamespaces(),
+        $blade
+    );
 
-        if (File::exists(base_path('app/Http/Livewire'))) {
-            $livewireComponentFinder = app(\Livewire\LivewireComponentsFinder::class);
-            foreach ($livewireComponentFinder->getManifest() as $name => $class) {
-                $snippet = new Component();
-                $snippet->livewire = true;
-                $snippet->name = "livewire:$name";
-                $snippet->file = $class;
-                $snippet->arguments = getPossibleAttributes($class);
-                $data[] = $snippet;
-            }
-        }
-    }
-
-    // Regular blade components
-    foreach ($aliased as $name => $fileOrClass) {
-        if (in_array($fileOrClass, $ignore)) {
+    // Get the components from the folder.
+    $viewsFiles = getViewsFiles();
+    foreach ($viewsFiles as $path => $viewName) {
+        if (str_starts_with($viewName, 'livewire.')) {
+            // Not handled here.
             continue;
         }
-        if (strpos($fileOrClass, '\\') !== false) {
-            $snippet = new Component();
-            $snippet->name = "x-$name";
-            $snippet->file = $fileOrClass;
-            $snippet->arguments = getPossibleAttributes($fileOrClass);
-            $data[] = $snippet;
+        if (str_starts_with($viewName, 'components.')) {
+            $name = str_replace('components.', '', $viewName);
+            $className = $tagCompiler->guessClassName($name);
+
+            $data[] = new Component(
+                name: "x-$name",
+                file: class_exists($className) ? getClassFile($className) : $path,
+                class: class_exists($className) ? $className : null,
+                views: class_exists($className) ? [$viewName] : []
+            );
         } else {
-            /* echo 'file' . $fileOrClass; */
+            $data[] = new Component(
+                name: $viewName,
+                file: $path,
+                views: [],
+                simpleView: true
+            );
         }
     }
 
-    $arrayFinal = [];
-
-    foreach ($directivesList as $final) {
-        $arrayFinal[$final->name] = $final->toEntry();
+    // Aliased.
+    $aliased = getBlade()->getClassComponentAliases();
+    foreach ($aliased as $name => $fileOrClass) {
+        if (strpos($fileOrClass, '\\') !== false) {
+            $data[] = new Component(
+                name: "x-$name",
+                file: getClassFile($fileOrClass),
+                views: extractViewNames($fileOrClass),
+                class: $fileOrClass,
+            );
+        } else {
+            $data[] = new Component(
+                name: "x-$name",
+                views: [$fileOrClass],
+            );
+        }
     }
 
-    foreach ($data as $final) {
-        $arrayFinal[$final->name] = $final->toEntry();
+    return $data;
+}
+
+function getViewsFiles(): array
+{
+    $list = [];
+    foreach (config('view.paths') as $viewPath) {
+        $files = File::allFiles($viewPath);
+
+        foreach ($files as $file) {
+            if (str_ends_with($file->getPathname(), '.blade.php')) {
+                $relativeToProject = str_replace(getcwd(), '', $file->getPathname());
+                $cleanedPath = str_replace(['/resources/views/', '.blade.php'], '', $relativeToProject);
+
+                $list[$file->getPathname()] = str_replace('/', '.', $cleanedPath);
+            }
+        }
     }
 
-    echo json_encode($arrayFinal, JSON_PRETTY_PRINT);
+    return $list;
+}
+
+/**
+ * @return string[]
+ */
+function extractViewNames(string $class): array
+{
+    $class = new \App\Reflection\ReflectionClass($class);
+    try {
+        $method = $class->getMethod('render');
+
+        if (strpos($method->body, 'view(') !== false) {
+            $matches = [];
+            preg_match_all('/view\((?:\'|")([\w\-:.]*)(?:\'|")\)/', $method->body, $matches);
+            return $matches[1] ?? [];
+        }
+        return [];
+    } catch (ReflectionException) {
+        return [];
+    }
+}
+
+function getBlade(): BladeCompiler
+{
+    return app('blade.compiler');
+}
+
+function getClassFile(string $class): string
+{
+    $class = new \ReflectionClass($class);
+    return $class->getFileName();
 }
 
 function getPossibleAttributes(string $class): array
 {
+    // @todo: Read inherited.
     $class = new \ReflectionClass($class);
     $result = [];
     /** @var \ReflectionProperty $attribute */
@@ -120,4 +234,4 @@ function getPossibleAttributes(string $class): array
     return $result;
 }
 
-handle();
+handle($options);

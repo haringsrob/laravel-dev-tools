@@ -6,6 +6,7 @@ use App\Dto\SnippetDto;
 use App\Dto\BladeComponentData;
 use App\Util\Path;
 use Illuminate\Support\Collection;
+use Phar;
 
 class DataStore
 {
@@ -19,9 +20,17 @@ class DataStore
     public function refreshAvailableComponents(bool $force = false): Collection
     {
         if ($this->availableComponents->isEmpty() || $force) {
-            $command = PHP_BINARY . ' ' . Path::getBaseDir() . 'laravel-dev-generators snippets --return ' . getcwd();
+            $commandBase = PHP_BINARY . ' ' . Path::getBaseDir() . 'laravel-dev-generators';
+            if ($phar = Phar::running(false)) {
+                $commandBase = $phar;
+            }
+            $command = $commandBase . ' snippets --return ' . getcwd();
+
+            Logger::logdbg($command);
 
             $result = shell_exec($command);
+
+            Logger::logdbg($result);
             if ($result) {
                 $this->availableComponents = $this->getComponentsFromData(json_decode($result, true));
             } else {

@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Logger;
 use Illuminate\Support\Facades\File;
 use LaravelZero\Framework\Commands\Command;
 

@@ -30,7 +30,6 @@ use Phpactor\LanguageServerProtocol\Location;
 use Phpactor\LanguageServerProtocol\Position;
 use Phpactor\LanguageServerProtocol\Range;
 use Phpactor\LanguageServerProtocol\TextDocumentItem;
-use Phpactor\LanguageServerProtocol\TextDocumentSyncKind;
 use Phpactor\TextDocument\TextDocumentUri;
 use Psr\Log\LoggerInterface;
 
@@ -54,10 +53,8 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         $options->triggerCharacters = ['<', ':', '@'];
 
         $capabilities->completionProvider = $options;
-        $capabilities->documentSymbolProvider = DocumentSymbolClientCapabilities::class;
         $capabilities->definitionProvider = DefinitionClientCapabilities::class;
         $capabilities->hoverProvider = HoverClientCapabilities::class;
-        $capabilities->textDocumentSync = TextDocumentSyncKind::FULL;
     }
 
     public function methods(): array

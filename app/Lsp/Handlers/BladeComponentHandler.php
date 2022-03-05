@@ -145,7 +145,6 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
 
         $searchChars = [];
 
-        $noneMatchers = ["\"", "'", "\\", "="];
         $doneMatchers = [">", "<"];
 
         $searchRangeEnd = $byteOffset->toInt();
@@ -171,13 +170,6 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
                 $doneMatcher = true;
             }
 
-            if (in_array($char, $noneMatchers)) {
-                if (!$type) {
-                    $type = self::MATCH_NONE;
-                }
-                $doneMatcher = true;
-            }
-
             if ($char == "<") {
                 if (!$type) {
                     $type = self::MATCH_COMPONENT;
@@ -194,6 +186,13 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             }
 
             $offsetLeft--;
+        }
+
+        $triggerCharacter = $textDocument->text[$byteOffset->toInt() + 1];
+
+        // If we are inside of an argument we can just skip.
+        if (in_array('"', $searchChars) || in_array('\'', $searchChars)) {
+            return null;
         }
 
         // Nothing else to do here.
@@ -254,7 +253,8 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             search: $search,
             element: $element,
             type: $type,
-            replaceRange: $replaceRange
+            replaceRange: $replaceRange,
+            triggerChar: $triggerCharacter
         );
     }
 }

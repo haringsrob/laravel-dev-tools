@@ -63,7 +63,7 @@ class CompletionResultFinder
                         documentation: $argumentData['doc'] ?? '',
                         commitCharacters: [':', '-'],
                         kind: CompletionItemKind::TYPE_PARAMETER,
-                        insertText: $name . '="$0"',
+                        insertText: ($completionRequest->triggerChar === ':' ? '' : ':') . $name . '="$0"',
                         insertTextFormat: InsertTextFormat::SNIPPET
                     );
                 }

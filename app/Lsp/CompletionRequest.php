@@ -12,7 +12,8 @@ class CompletionRequest
         public string $type,
         public ?Element $element = null,
         public ?string $elementName = null,
-        public ?Range $replaceRange = null
+        public ?Range $replaceRange = null,
+        public ?string $triggerChar = null,
     ) {
     }
 }

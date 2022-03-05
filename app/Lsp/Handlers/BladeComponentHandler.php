@@ -5,9 +5,7 @@ namespace App\Lsp\Handlers;
 use Amp\CancellationToken;
 use Amp\Promise;
 use Amp\Success;
-use App\Dto\SnippetDto;
 use App\DataStore;
-use App\Dto\BladeComponentData;
 use App\Dto\Element;
 use App\Logger;
 use App\Lsp\CompletionRequest;
@@ -17,9 +15,6 @@ use Exception;
 use Phpactor\LanguageServer\Core\Handler\CanRegisterCapabilities;
 use Phpactor\LanguageServer\Core\Handler\Handler;
 use Phpactor\LanguageServer\Core\Workspace\Workspace;
-use Phpactor\LanguageServerProtocol\CompletionItem;
-use Phpactor\LanguageServerProtocol\CompletionItemKind;
-use Phpactor\LanguageServerProtocol\CompletionList;
 use Phpactor\LanguageServerProtocol\CompletionParams;
 use Phpactor\LanguageServerProtocol\ServerCapabilities;
 use Phpactor\LanguageServerProtocol\CompletionOptions;
@@ -28,11 +23,10 @@ use Phpactor\LanguageServerProtocol\DefinitionParams;
 use Phpactor\LanguageServerProtocol\Hover;
 use Phpactor\LanguageServerProtocol\HoverClientCapabilities;
 use Phpactor\LanguageServerProtocol\HoverParams;
-use Phpactor\LanguageServerProtocol\InsertTextFormat;
 use Phpactor\LanguageServerProtocol\Location;
 use Phpactor\LanguageServerProtocol\Position;
 use Phpactor\LanguageServerProtocol\Range;
-use Phpactor\LanguageServerProtocol\TextDocumentItem;
+use Phpactor\LanguageServerProtocol\TextDocumentIdentifier;
 use Phpactor\TextDocument\TextDocumentUri;
 use Psr\Log\LoggerInterface;
 
@@ -77,10 +71,9 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
 
     public function hover(HoverParams $params, CancellationToken $cancellationToken): Promise
     {
-        $textDocument = $this->workspace->get($params->textDocument->uri);
-        $element = $this->getElementAtPosition($textDocument, $params->position);
-        if ($element && $info = $this->getElementInformation($element)) {
-            return new Success(new Hover($info->getHoverData()));
+        $request = $this->getCompletionRequest($params->textDocument, $params->position);
+        if ($request && $request->element->getComponent()) {
+            return new Success(new Hover($request->element->getComponent()->getHoverData()));
         }
 
         return new Success(null);
@@ -88,9 +81,9 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
 
     public function definition(DefinitionParams $params, CancellationToken $cancellationToken): Promise
     {
-        $textDocument = $this->workspace->get($params->textDocument->uri);
-        $element = $this->getElementAtPosition($textDocument, $params->position);
-        if ($element && $info = $this->getElementInformation($element)) {
+        $request = $this->getCompletionRequest($params->textDocument, $params->position);
+
+        if ($request && $info = $request->element->getComponent()) {
             $locations = array_values($info->views);
             $locations[] = $info->file;
 
@@ -117,110 +110,21 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
                 return false;
             }
 
-            $textDocument = $this->workspace->get($params->textDocument->uri);
-            $byteOffset = PositionConverter::positionToByteOffset($params->position, $textDocument->text);
+            $completionRequest = $this->getCompletionRequest($params->textDocument, $params->position);
 
-            $components = $this->store->availableComponents->whereIn(
-                'type',
-                [SnippetDto::TYPE_COMPONENT, SnippetDto::TYPE_LIVEWIRE]
-            );
-
-            // Check to see if we are inside a blade component. <x-some-thi<cur> :<cur> h<cur>/>
-            // The document is potentially incomplete.
-            // We do this by checking that we find <str before >
-            $cur = $textDocument->text[$byteOffset->toInt() - 1];
-            $prev = $textDocument->text[$byteOffset->toInt() - 2];
-
-            // Todo: Figure out the full component name or argument.
-            // Component name.
-            $offset = $byteOffset->toInt() - 1;
-            $type = null;
-            $doneMatcher = false;
-
-            $chars = [];
-
-            $searchChars = [];
-
-            $noneMatchers = [">", "\"", "'", "\\", "="];
-
-            $searchRangeEnd = $byteOffset->toInt();
-            $searchRangeStart = 0;
-
-            // Find the start.
-            while ($offset >= 0 && !$doneMatcher) {
-                $char = $textDocument->text[$offset];
-
-                $chars[] = $char;
-
-                if (!$type) {
-                    $searchChars[] = $char;
-                }
-
-                if (in_array($char, $noneMatchers)) {
-                    if (!$type) {
-                        $type = self::MATCH_NONE;
-                    }
-                    $doneMatcher = true;
-                }
-
-                if ($char == "<") {
-                    if (!$type) {
-                        $type = self::MATCH_COMPONENT;
-                    }
-                    $searchRangeStart = $offset;
-                    $doneMatcher = true;
-                }
-
-                if ($char == " ") {
-                    $searchRangeStart = $offset;
-                    $type = self::MATCH_PARAM;
-                }
-
-                $offset--;
-            }
-
-            $search = join('', array_reverse($searchChars));
-            if ($type === self::MATCH_COMPONENT) {
-                $search = ltrim($search, '<');
-            } elseif ($type === self::MATCH_PARAM) {
-                $search = ltrim($search);
-            }
-
-            $replaceRange = new Range(
-                PositionConverter::intByteOffsetToPosition($searchRangeStart, $textDocument->text),
-                PositionConverter::intByteOffsetToPosition($searchRangeEnd, $textDocument->text)
-            );
-
-            Logger::logdbg(join('', array_reverse($chars)));
-            Logger::logdbg('type:' . $type . '|search:' . $search . '|cur:' . $cur . '|prev:' . $prev);
-            Logger::logdbg('components:' . $components->count());
-
-            if ($type === self::MATCH_COMPONENT) {
-                $request = new CompletionRequest(
-                    search: $search,
-                    replaceRange: $replaceRange,
-                );
+            if ($completionRequest->type === self::MATCH_COMPONENT) {
                 try {
-                    return $this->resultFinder->getComponents($request);
+                    return $this->resultFinder->getComponents($completionRequest);
                 } catch (Exception $e) {
                     Logger::logdbg($e->getMessage());
                     return [];
                 }
-            } elseif ($type === self::MATCH_PARAM) {
-                $element = $this->getElementAtPosition($textDocument, $params->position);
-
-                if ($element) {
-                    $request = new CompletionRequest(
-                        search: $search,
-                        replaceRange: $replaceRange
-                    );
-
-                    try {
-                        return $this->resultFinder->getArguments($request, $element);
-                    } catch (Exception $e) {
-                        Logger::logdbg($e->getMessage());
-                        return [];
-                    }
+            } elseif ($completionRequest->type === self::MATCH_PARAM) {
+                try {
+                    return $this->resultFinder->getArguments($completionRequest);
+                } catch (Exception $e) {
+                    Logger::logdbg($e->getMessage());
+                    return [];
                 }
             }
 
@@ -228,65 +132,129 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         });
     }
 
-    private function getElementInformation(Element $element): ?BladeComponentData
+    private function getCompletionRequest(TextDocumentIdentifier $textDocument, Position $position): ?CompletionRequest
     {
-        $components = $this->store->availableComponents->whereIn(
-            'type',
-            [
-                SnippetDto::TYPE_COMPONENT,
-                SnippetDto::TYPE_LIVEWIRE,
-                SnippetDto::TYPE_VIEW
-            ]
+        $textDocument = $this->workspace->get($textDocument->uri);
+        $byteOffset = PositionConverter::positionToByteOffset($position, $textDocument->text);
+
+        $offsetLeft = $byteOffset->toInt() - 1;
+        $type = null;
+        $doneMatcher = false;
+
+        $chars = [];
+
+        $searchChars = [];
+
+        $noneMatchers = ["\"", "'", "\\", "="];
+        $doneMatchers = [">", "<"];
+
+        $searchRangeEnd = $byteOffset->toInt();
+        $searchRangeStart = 0;
+        $fullStartIndex = 0;
+
+        // Find the start.
+        while ($offsetLeft >= 0 && !$doneMatcher) {
+            $char = $textDocument->text[$offsetLeft];
+
+            $chars[] = $char;
+
+            if (!$type) {
+                $searchChars[] = $char;
+            }
+
+            if (in_array($char, $doneMatchers)) {
+                if ($char === '>') {
+                    $type = self::MATCH_NONE;
+                } else {
+                    $fullStartIndex = $offsetLeft;
+                }
+                $doneMatcher = true;
+            }
+
+            if (in_array($char, $noneMatchers)) {
+                if (!$type) {
+                    $type = self::MATCH_NONE;
+                }
+                $doneMatcher = true;
+            }
+
+            if ($char == "<") {
+                if (!$type) {
+                    $type = self::MATCH_COMPONENT;
+                }
+                $searchRangeStart = $offsetLeft;
+                $doneMatcher = true;
+            }
+
+            if ($char == " ") {
+                if (!$searchRangeStart) {
+                    $searchRangeStart = $offsetLeft;
+                }
+                $type = self::MATCH_PARAM;
+            }
+
+            $offsetLeft--;
+        }
+
+        // Nothing else to do here.
+        if ($type === self::MATCH_NONE) {
+            return null;
+        }
+
+        // Find the end.
+        $foundEnd = false;
+        $offsetRight = $byteOffset->toInt();
+        $endMatchers = ['>', '/>', '<', '@'];
+        $docLength = strlen($textDocument->text);
+        $fullEndIndex = 0;
+        while ($offsetRight && !$foundEnd) {
+            $char = $textDocument->text[$offsetRight];
+
+            if (in_array($char, $endMatchers)) {
+                $foundEnd = true;
+                $fullEndIndex = $offsetRight;
+            }
+
+            $offsetRight++;
+
+            if ($offsetRight == $docLength) {
+                $foundEnd = true;
+            }
+
+            array_unshift($chars, $char);
+        }
+
+        // Now the $chars contains the full element.
+        // Extract the name.
+        $fullElement = join('', array_reverse($chars));
+        $name = ltrim(strtok($fullElement, " "), '<');
+
+        $element = new Element(
+            $name,
+            $fullElement,
+            $fullStartIndex,
+            $fullEndIndex,
+            $this->store
         );
-        return $components->firstWhere('name', $element->name);
-    }
 
-    private function getElementAtPosition(TextDocumentItem $document, Position $position): ?Element
-    {
-        $byteOffset = PositionConverter::positionToByteOffset($position, $document->text);
-
-        $currPos = $byteOffset->toInt();
-        $docText = $document->text;
-
-        // Now we should figure out if we are inside of an html tag.
-        $closingPosSelfClosing = strpos($docText, '/>', $currPos);
-        $closingPosElement = strpos($docText, '>', $currPos);
-        $nextOpeningPos = strpos($docText, '<', $currPos);
-
-        if ($closingPosElement && $closingPosSelfClosing) {
-            if ($closingPosSelfClosing < $closingPosElement) {
-                $closingPos = $closingPosSelfClosing + 2;
-            } else {
-                $closingPos = $closingPosElement + 1;
-            }
-        } elseif ($closingPosElement) {
-            $closingPos = $closingPosElement + 1;
-        } else {
-            // Unclosed
-            if ($nextOpeningPos) {
-                $closingPos = $nextOpeningPos;
-            } else {
-                $closingPos = $currPos;
-            }
+        $search = join('', array_reverse($searchChars));
+        if ($type === self::MATCH_COMPONENT) {
+            $search = ltrim($search, '<');
+        }
+        if ($type === self::MATCH_PARAM) {
+            $search = ltrim($search);
         }
 
-        $openingPos = strrpos(substr($docText, 0, $closingPos ?? 0), "<");
-        $openingPosClosingElement = strrpos(substr($docText, 0, $closingPos ?? 0), "</");
+        $replaceRange = new Range(
+            PositionConverter::intByteOffsetToPosition($searchRangeStart, $textDocument->text),
+            PositionConverter::intByteOffsetToPosition($searchRangeEnd, $textDocument->text)
+        );
 
-        if ($currPos > $openingPos && $currPos < $closingPos) {
-            // Parse element details.
-            // @todo: Make a separate blade component parser based on ComponentTagCompiler.
-            $element = substr($docText, $openingPos, $closingPos - $openingPos);
-
-            $firstWhiteSpacePos = strpos($element, ' ');
-            $firstClosingPos = strpos($element, '>');
-            $endingPositionToUse = min($firstClosingPos, $firstWhiteSpacePos);
-            $starting = $openingPos === $openingPosClosingElement ? 2 : 1;
-            $elementName = substr($element, $starting, $endingPositionToUse - 1);
-
-            return new Element($elementName, $element, $openingPos, $closingPos - $openingPos);
-        }
-
-        return null;
+        return new CompletionRequest(
+            search: $search,
+            element: $element,
+            type: $type,
+            replaceRange: $replaceRange
+        );
     }
 }

@@ -2,15 +2,19 @@
 
 namespace App\Dto;
 
+use App\DataStore;
 use Illuminate\View\Compilers\ComponentTagCompiler;
 
 class Element
 {
+    private ?BladeComponentData $component = null;
+
     public function __construct(
         public string $name,
         public string $full,
         public int $startsAt,
-        public int $endsAt
+        public int $endsAt,
+        public DataStore $store
     ) {
     }
 
@@ -18,5 +22,22 @@ class Element
     {
         $tagCompiler = new ComponentTagCompiler();
         return array_keys(invade($tagCompiler)->getAttributesFromAttributeString($this->full));
+    }
+
+    public function getComponent(): ?BladeComponentData
+    {
+        if (!$this->component) {
+            $components = $this->store->availableComponents->whereIn(
+                'type',
+                [
+                    SnippetDto::TYPE_COMPONENT,
+                    SnippetDto::TYPE_LIVEWIRE,
+                    SnippetDto::TYPE_VIEW
+                ]
+            );
+            $this->component = $components->firstWhere('name', $this->name);
+        }
+
+        return $this->component;
     }
 }

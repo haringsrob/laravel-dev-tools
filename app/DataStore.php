@@ -28,7 +28,9 @@ class DataStore
 
             $result = shell_exec($command);
 
-            Logger::logdbg($result);
+            if (strpos($result, 'Exception')) {
+                Logger::logdbg($result);
+            }
 
             if ($result) {
                 $this->availableComponents = $this->getComponentsFromData(json_decode($result, true));

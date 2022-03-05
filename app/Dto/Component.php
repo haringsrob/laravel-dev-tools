@@ -66,7 +66,7 @@ class Component implements SnippetDto
             $skipArgs = [...$skipArgs, 'id', 'redirectTo'];
         }
 
-        foreach ($this->arguments as $name => $argumentDetails) {
+        foreach (array_keys($this->arguments) as $name) {
             if (in_array($name, $skipArgs)) {
                 continue;
             }

@@ -3,7 +3,6 @@
 namespace App\Lsp;
 
 use App\DataStore;
-use App\Dto\Element;
 use App\Dto\SnippetDto;
 use App\Lsp\CompletionRequest;
 use Phpactor\LanguageServerProtocol\CompletionItem;
@@ -23,16 +22,16 @@ class CompletionResultFinder
     /**
      * @return CompletionItem[]
      */
-    public function getArguments(CompletionRequest $completionRequest, Element $element): array
+    public function getArguments(CompletionRequest $completionRequest): array
     {
         /** @var BladeComponentData $component */
-        $component = $this->dataStore->availableComponents->firstWhere('name', $element->name);
+        $component = $this->dataStore->availableComponents->firstWhere('name', $completionRequest->element->name);
 
         $completionItems = [];
 
         // Find a matching component.
         if ($component) {
-            $usedArguments = $element->getUsedArguments();
+            $usedArguments = $completionRequest->element->getUsedArguments();
             foreach ($component->arguments as $name => $argumentData) {
                 // Logic
                 if (!in_array($name, $usedArguments) && strpos($name, ltrim($completionRequest->search, ':')) !== false) {

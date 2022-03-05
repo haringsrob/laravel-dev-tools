@@ -5,6 +5,7 @@ namespace App\Commands;
 use App\Logger;
 use Illuminate\Support\Facades\File;
 use LaravelZero\Framework\Commands\Command;
+use Phar;
 
 use function base_path;
 
@@ -32,31 +33,26 @@ class GenerateSnippets extends Command
     public function handle()
     {
         $path = $this->argument('path');
-        $vscode = $this->option('vscode') ?? false;
-        $return = $this->option('return') ?? false;
         $runner = base_path('app/helpers/runner.php');
-        $options = $return ? '' : 'snippets=true';
-        $output = shell_exec("php $runner $path snippets $options");
 
-        if ($vscode) {
-            $targetPath = $path . '/.vscode/';
-
-            if (!File::exists($targetPath)) {
-                File::makeDirectory($targetPath, 0755, true);
-            }
-
-            file_put_contents($targetPath . '/blade.code-snippets', $output);
-
-            $this->line('.vscode/blade.code-snippets created.');
-        } elseif ($return) {
-            echo $output;
-        } else {
-            $targetPath = $path . '/vendor/haringsrob/laravel-dev-generators/snippets/';
-
-            if (!File::exists($targetPath)) {
-                File::makeDirectory($targetPath, 0755, true);
-            }
-            file_put_contents($targetPath . '/blade.json', $output);
+        $baseDir = __DIR__ . '/../../';
+        if ($pharBase = Phar::running()) {
+            $baseDir = $pharBase;
         }
+
+        $argv = [
+            '',
+            $path,
+            'snippets',
+        ];
+
+        $script = file_get_contents($runner);
+        $result = eval(str_replace('<?php', '', $script));
+
+        // Here to make compiler happy!
+        if ($result && $baseDir && $argv) {
+        }
+
+        return;
     }
 }

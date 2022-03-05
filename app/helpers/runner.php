@@ -3,8 +3,6 @@
 $projectPath = $argv[1];
 unset($argv[1]);
 
-define('LARAVEL_START', microtime(true));
-
 /*
 |--------------------------------------------------------------------------
 | Partial copy of artisan.
@@ -31,9 +29,9 @@ foreach (explode(' ', $argv[3] ?? '') as $option) {
 }
 
 if ($argv[2] === 'views') {
-    include_once __DIR__ . '/SubCommands/Views.php';
+    include_once $baseDir . '/app/helpers/SubCommands/Views.php';
 } elseif ($argv[2] === 'config') {
-    include_once __DIR__ . '/SubCommands/Config.php';
+    include_once $baseDir . '/app/helpers/SubCommands/Config.php';
 } elseif ($argv[2] === 'snippets') {
-    include_once __DIR__ . '/SubCommands/Snippets.php';
+    include_once $baseDir . '/app/helpers/SubCommands/Snippets.php';
 }

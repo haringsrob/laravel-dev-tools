@@ -5,3 +5,4 @@
 .phpunit.result.cache
 log.txt
 builds
+extensions/vscode/laravel-dev-generators

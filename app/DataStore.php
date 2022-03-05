@@ -26,11 +26,8 @@ class DataStore
             }
             $command = $commandBase . ' snippets --return ' . getcwd();
 
-            Logger::logdbg($command);
-
             $result = shell_exec($command);
 
-            Logger::logdbg($result);
             if ($result) {
                 $this->availableComponents = $this->getComponentsFromData(json_decode($result, true));
             } else {

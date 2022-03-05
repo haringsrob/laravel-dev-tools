@@ -30,6 +30,7 @@ use Phpactor\LanguageServerProtocol\Location;
 use Phpactor\LanguageServerProtocol\Position;
 use Phpactor\LanguageServerProtocol\Range;
 use Phpactor\LanguageServerProtocol\TextDocumentItem;
+use Phpactor\LanguageServerProtocol\TextEdit;
 use Phpactor\TextDocument\TextDocumentUri;
 use Psr\Log\LoggerInterface;
 
@@ -38,6 +39,10 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
     public LoggerInterface $logger;
     public Workspace $workspace;
     public DataStore $store;
+
+    private const MATCH_PARAM = 'param';
+    private const MATCH_NONE = 'none';
+    private const MATCH_COMPONENT = 'component';
 
     public function __construct(LoggerInterface $logger, Workspace $workspace, DataStore $store)
     {
@@ -70,7 +75,6 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
     {
         $textDocument = $this->workspace->get($params->textDocument->uri);
         $element = $this->getElementAtPosition($textDocument, $params->position);
-        Logger::logdbg($element);
         if ($element && $info = $this->getElementInformation($element)) {
             return new Success(new Hover($info->getHoverData()));
         }
@@ -123,40 +127,106 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             // We do this by checking that we find <str before >
             $cur = $textDocument->text[$byteOffset->toInt() - 1];
             $prev = $textDocument->text[$byteOffset->toInt() - 2];
-            if ($prev && $cur) {
-                if ($prev === '<' || $cur === '<') {
-                    /** @var BladeComponentData $data */
-                    foreach ($components as $name => $data) {
-                        $snippet = "<{$data->name} $0/>";
-                        if ($data->hasSlot) {
-                            $snippet = "<{$data->name}>$0</{$data->name}>";
-                        }
-                        Logger::logdbg($snippet);
-                        $completionItems[] = new CompletionItem(
-                            label: "<{$data->name}",
-                            documentation: $data->getHoverData(),
-                            detail: $data->getFile(),
-                            kind: CompletionItemKind::TYPE_PARAMETER,
-                            insertText: $snippet,
-                            insertTextFormat: InsertTextFormat::SNIPPET
-                        );
-                        yield \Amp\delay(1);
-                    }
+
+            // Todo: Figure out the full component name or argument.
+            //
+            // Component name.
+            $offset = $byteOffset->toInt() - 1;
+            $type = null;
+            $doneMatcher = false;
+
+            $chars = [];
+
+            $searchChars = [];
+
+            $noneMatchers = [">", "\"", "'", "\\", "="];
+
+            $searchRangeEnd = $byteOffset->toInt();
+            $searchRangeStart = 0;
+
+            // Find the start.
+            while ($offset >= 0 && !$doneMatcher) {
+                $char = $textDocument->text[$offset];
+
+                $chars[] = $char;
+
+                if (!$type) {
+                    $searchChars[] = $char;
                 }
-                if (
-                    $prev === null || $prev === ':' || $cur === ':'
-                ) {
-                    $element = $this->getElementAtPosition($textDocument, $params->position);
 
-                    if ($element) {
-                        /** @var BladeComponentData $component */
-                        $component = $components->firstWhere('name', $element->name);
+                if (in_array($char, $noneMatchers)) {
+                    if (!$type) {
+                        $type = self::MATCH_NONE;
+                    }
+                    $doneMatcher = true;
+                }
+
+                if ($char == "<") {
+                    if (!$type) {
+                        $type = self::MATCH_COMPONENT;
+                    }
+                    $searchRangeStart = $offset;
+                    $doneMatcher = true;
+                }
+
+                if ($char == " ") {
+                    $searchRangeStart = $offset;
+                    $type = self::MATCH_PARAM;
+                }
+
+                $offset--;
+            }
+
+            $search = join('', array_reverse($searchChars));
+            if ($type === self::MATCH_COMPONENT) {
+                $search = ltrim($search, '<');
+            } elseif ($type === self::MATCH_PARAM) {
+                $search = ltrim($search);
+            }
+
+            $replaceRange = new Range(
+                PositionConverter::intByteOffsetToPosition($searchRangeStart, $textDocument->text),
+                PositionConverter::intByteOffsetToPosition($searchRangeEnd, $textDocument->text)
+            );
+
+            Logger::logdbg(join('', array_reverse($chars)));
+            Logger::logdbg('type:' . $type . '|search:' . $search . '|cur:' . $cur . '|prev:' . $prev);
+            Logger::logdbg('components:' . $components->count());
+
+            if ($type === self::MATCH_COMPONENT) {
+                /** @var BladeComponentData $data */
+                foreach ($components as $name => $data) {
+                    if (strpos($data->name, $search) === false) {
+                        continue;
+                    }
+                    $snippet = "<{$data->name} $0/>";
+                    if ($data->hasSlot) {
+                        $snippet = "<{$data->name}>$0</{$data->name}>";
+                    }
+                    $completionItems[] = new CompletionItem(
+                        label: "<{$data->name} />",
+                        documentation: $data->getHoverData(),
+                        detail: $data->getFile(),
+                        kind: CompletionItemKind::MODULE,
+                        textEdit: new TextEdit($replaceRange, $snippet),
+                        insertTextFormat: InsertTextFormat::SNIPPET
+                    );
+                    yield \Amp\delay(1);
+                }
+            } elseif ($type === self::MATCH_PARAM) {
+                $element = $this->getElementAtPosition($textDocument, $params->position);
+
+                if ($element) {
+                    /** @var BladeComponentData $component */
+                    $component = $components->firstWhere('name', $element->name);
+
+                    // Find a matching component.
+                    if ($component) {
                         $usedArguments = $element->getUsedArguments();
-
-                        // Find a matching component.
-                        if ($component) {
-                            foreach ($component->arguments as $name => $argumentData) {
-                                if (!in_array($name, $usedArguments)) {
+                        foreach ($component->arguments as $name => $argumentData) {
+                            $test = 'test';
+                            if (!in_array($name, $usedArguments) && strpos($name, ltrim($search, ':')) !== false) {
+                                if (!str_starts_with($search, ':')) {
                                     if ($argumentData['type'] !== 'bool') {
                                         $completionItems[] = new CompletionItem(
                                             label: $name . '=""',
@@ -173,26 +243,25 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
                                             detail: $argumentData['type'] ?? '',
                                             documentation: $argumentData['doc'] ?? '',
                                             kind: CompletionItemKind::TYPE_PARAMETER,
-                                            insertText: $name . '$0',
+                                            insertText: $name,
                                             insertTextFormat: InsertTextFormat::SNIPPET
                                         );
                                     }
-                                    $completionItems[] = new CompletionItem(
-                                        label: ':' . $name . '=""',
-                                        detail: $argumentData['type'] ?? '',
-                                        documentation: $argumentData['doc'] ?? '',
-                                        kind: CompletionItemKind::TYPE_PARAMETER,
-                                        insertText: ':' . $name . '="$0"',
-                                        insertTextFormat: InsertTextFormat::SNIPPET
-                                    );
-                                    yield \Amp\delay(1);
                                 }
+                                $completionItems[] = new CompletionItem(
+                                    label: ':' . $name . '=""',
+                                    detail: $argumentData['type'] ?? '',
+                                    documentation: $argumentData['doc'] ?? '',
+                                    commitCharacters: [':', '-'],
+                                    kind: CompletionItemKind::TYPE_PARAMETER,
+                                    insertText: $name . '="$0"',
+                                    insertTextFormat: InsertTextFormat::SNIPPET
+                                );
+                                Logger::logdbg($completionItems);
+                                yield \Amp\delay(1);
                             }
                         }
                     }
-                }
-                if ($prev === '\\') {
-                    // Potential closing tag.
                 }
             }
 

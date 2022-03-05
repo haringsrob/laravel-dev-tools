@@ -15,7 +15,6 @@ class Lsp extends Command
     public function handle(): void
     {
         $logger = Logger::getLogger();
-        Logger::logdbg('test');
         LanguageServerBuilder::create(new BladeDispatcherFactory($logger), $logger)
             ->build()
             ->run();

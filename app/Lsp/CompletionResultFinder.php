@@ -57,6 +57,7 @@ class CompletionResultFinder
                             );
                         }
                     }
+
                     $completionItems[] = new CompletionItem(
                         label: ':' . $name . '=""',
                         detail: $argumentData['type'] ?? '',

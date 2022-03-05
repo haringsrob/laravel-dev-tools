@@ -2,6 +2,8 @@
 
 namespace App\Dto;
 
+use InvalidArgumentException;
+
 class Component implements SnippetDto
 {
     public array $arguments = [];
@@ -34,7 +36,10 @@ class Component implements SnippetDto
         $viewFactory = invade(app('view'));
 
         foreach ($views as $viewName) {
-            $result[$viewName] = realpath($viewFactory->finder->find($viewFactory->normalizeName($viewName)));
+            try {
+                $result[$viewName] = realpath($viewFactory->finder->find($viewFactory->normalizeName($viewName)));
+            } catch (InvalidArgumentException) {
+            }
         }
 
         return $result;

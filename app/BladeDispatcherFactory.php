@@ -2,8 +2,7 @@
 
 namespace App;
 
-use App\Handlers\BladeComponentHandler;
-use Exception;
+use App\Lsp\Handlers\BladeComponentHandler;
 use Phpactor\LanguageServer\Adapter\Psr\AggregateEventDispatcher;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\PassThroughArgumentResolver;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\LanguageSeverProtocolParamsResolver;

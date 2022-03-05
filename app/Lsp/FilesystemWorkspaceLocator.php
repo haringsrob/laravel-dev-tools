@@ -1,6 +1,6 @@
 <?php
 
-namespace BladeLsp\Lsp;
+namespace App\Lsp;
 
 use Phpactor\TextDocument\Exception\TextDocumentNotFound;
 use Phpactor\TextDocument\TextDocument;

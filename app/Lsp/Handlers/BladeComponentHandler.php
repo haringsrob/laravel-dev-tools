@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Handlers;
+namespace App\Lsp\Handlers;
 
 use Amp\CancellationToken;
 use Amp\Promise;
@@ -10,7 +10,10 @@ use App\DataStore;
 use App\Dto\BladeComponentData;
 use App\Dto\Element;
 use App\Logger;
+use App\Lsp\CompletionRequest;
 use App\Util\PositionConverter;
+use App\Lsp\CompletionResultFinder;
+use Exception;
 use Phpactor\LanguageServer\Core\Handler\CanRegisterCapabilities;
 use Phpactor\LanguageServer\Core\Handler\Handler;
 use Phpactor\LanguageServer\Core\Workspace\Workspace;
@@ -30,7 +33,6 @@ use Phpactor\LanguageServerProtocol\Location;
 use Phpactor\LanguageServerProtocol\Position;
 use Phpactor\LanguageServerProtocol\Range;
 use Phpactor\LanguageServerProtocol\TextDocumentItem;
-use Phpactor\LanguageServerProtocol\TextEdit;
 use Phpactor\TextDocument\TextDocumentUri;
 use Psr\Log\LoggerInterface;
 
@@ -39,6 +41,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
     public LoggerInterface $logger;
     public Workspace $workspace;
     public DataStore $store;
+    public CompletionResultFinder $resultFinder;
 
     private const MATCH_PARAM = 'param';
     private const MATCH_NONE = 'none';
@@ -49,6 +52,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         $this->workspace = $workspace;
         $this->logger = $logger;
         $this->store = $store;
+        $this->resultFinder = new CompletionResultFinder($store);
         $this->store->refreshAvailableComponents(true);
     }
 
@@ -108,19 +112,18 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
 
     public function complete(CompletionParams $params, CancellationToken $cancellation): Promise
     {
-        return \Amp\call(function () use ($cancellation, $params) {
+        return \Amp\call(function () use ($params) {
             if (null === $this->store->availableComponents) {
                 return false;
             }
 
-            $completionItems = [];
-
             $textDocument = $this->workspace->get($params->textDocument->uri);
             $byteOffset = PositionConverter::positionToByteOffset($params->position, $textDocument->text);
 
-            $completionItems = [];
-
-            $components = $this->store->availableComponents->whereIn('type', [SnippetDto::TYPE_COMPONENT, SnippetDto::TYPE_LIVEWIRE]);
+            $components = $this->store->availableComponents->whereIn(
+                'type',
+                [SnippetDto::TYPE_COMPONENT, SnippetDto::TYPE_LIVEWIRE]
+            );
 
             // Check to see if we are inside a blade component. <x-some-thi<cur> :<cur> h<cur>/>
             // The document is potentially incomplete.
@@ -129,7 +132,6 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             $prev = $textDocument->text[$byteOffset->toInt() - 2];
 
             // Todo: Figure out the full component name or argument.
-            //
             // Component name.
             $offset = $byteOffset->toInt() - 1;
             $type = null;
@@ -194,86 +196,35 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             Logger::logdbg('components:' . $components->count());
 
             if ($type === self::MATCH_COMPONENT) {
-                /** @var BladeComponentData $data */
-                foreach ($components as $name => $data) {
-                    if (strpos($data->name, $search) === false) {
-                        continue;
-                    }
-                    $snippet = "<{$data->name} $0/>";
-                    if ($data->hasSlot) {
-                        $snippet = "<{$data->name}>$0</{$data->name}>";
-                    }
-                    $completionItems[] = new CompletionItem(
-                        label: "<{$data->name} />",
-                        documentation: $data->getHoverData(),
-                        detail: $data->getFile(),
-                        kind: CompletionItemKind::MODULE,
-                        textEdit: new TextEdit($replaceRange, $snippet),
-                        insertTextFormat: InsertTextFormat::SNIPPET
-                    );
-                    yield \Amp\delay(1);
+                $request = new CompletionRequest(
+                    search: $search,
+                    replaceRange: $replaceRange,
+                );
+                try {
+                    return $this->resultFinder->getComponents($request);
+                } catch (Exception $e) {
+                    Logger::logdbg($e->getMessage());
+                    return [];
                 }
             } elseif ($type === self::MATCH_PARAM) {
                 $element = $this->getElementAtPosition($textDocument, $params->position);
 
                 if ($element) {
-                    /** @var BladeComponentData $component */
-                    $component = $components->firstWhere('name', $element->name);
+                    $request = new CompletionRequest(
+                        search: $search,
+                        replaceRange: $replaceRange
+                    );
 
-                    // Find a matching component.
-                    if ($component) {
-                        $usedArguments = $element->getUsedArguments();
-                        foreach ($component->arguments as $name => $argumentData) {
-                            $test = 'test';
-                            if (!in_array($name, $usedArguments) && strpos($name, ltrim($search, ':')) !== false) {
-                                if (!str_starts_with($search, ':')) {
-                                    if ($argumentData['type'] !== 'bool') {
-                                        $completionItems[] = new CompletionItem(
-                                            label: $name . '=""',
-                                            detail: $argumentData['type'] ?? '',
-                                            documentation: $argumentData['doc'] ?? '',
-                                            kind: CompletionItemKind::TYPE_PARAMETER,
-                                            insertText: $name . '="$0"',
-                                            insertTextFormat: InsertTextFormat::SNIPPET
-                                        );
-                                    } else {
-                                        // Booleans can be true if no args.
-                                        $completionItems[] = new CompletionItem(
-                                            label: $name,
-                                            detail: $argumentData['type'] ?? '',
-                                            documentation: $argumentData['doc'] ?? '',
-                                            kind: CompletionItemKind::TYPE_PARAMETER,
-                                            insertText: $name,
-                                            insertTextFormat: InsertTextFormat::SNIPPET
-                                        );
-                                    }
-                                }
-                                $completionItems[] = new CompletionItem(
-                                    label: ':' . $name . '=""',
-                                    detail: $argumentData['type'] ?? '',
-                                    documentation: $argumentData['doc'] ?? '',
-                                    commitCharacters: [':', '-'],
-                                    kind: CompletionItemKind::TYPE_PARAMETER,
-                                    insertText: $name . '="$0"',
-                                    insertTextFormat: InsertTextFormat::SNIPPET
-                                );
-                                Logger::logdbg($completionItems);
-                                yield \Amp\delay(1);
-                            }
-                        }
+                    try {
+                        return $this->resultFinder->getArguments($request, $element);
+                    } catch (Exception $e) {
+                        Logger::logdbg($e->getMessage());
+                        return [];
                     }
                 }
             }
 
-            foreach ($completionItems as $completion) {
-                try {
-                    $cancellation->throwIfRequested();
-                } catch (\Amp\CancelledException) {
-                    break;
-                }
-            }
-
-            return new CompletionList(true, $completionItems);
+            return [];
         });
     }
 

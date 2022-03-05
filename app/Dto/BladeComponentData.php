@@ -19,7 +19,7 @@ class BladeComponentData
 
     public function getHoverData(): string
     {
-        return $this->doc ?? $this->getFile() ?? $this->class;
+        return $this->doc ?? $this->getFile() ?? $this->class ?? '';
     }
 
     public function getFile(): ?string

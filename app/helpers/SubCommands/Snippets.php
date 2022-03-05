@@ -22,21 +22,19 @@ include_once(__DIR__ . '/../../Reflection/StringHelper.php');
 function handle(array $options = [])
 {
     $arrayFinal = [];
-    if (false) {
-        foreach (getDirectives() as $final) {
-            if ($options['snippets'] ?? false) {
-                $arrayFinal[$final->name] = $final->toEntry();
-            } else {
-                $arrayFinal[$final->name] = $final->toArray();
-            }
+    foreach (getDirectives() as $final) {
+        if ($options['snippets'] ?? false) {
+            $arrayFinal[$final->name] = $final->toEntry();
+        } else {
+            $arrayFinal[$final->name] = $final->toArray();
         }
+    }
 
-        foreach (getLivewireComponents() as $final) {
-            if ($options['snippets'] ?? false) {
-                $arrayFinal[$final->name] = $final->toEntry();
-            } else {
-                $arrayFinal[$final->name] = $final->toArray();
-            }
+    foreach (getLivewireComponents() as $final) {
+        if ($options['snippets'] ?? false) {
+            $arrayFinal[$final->name] = $final->toEntry();
+        } else {
+            $arrayFinal[$final->name] = $final->toArray();
         }
     }
 

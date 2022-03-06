@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Lsp\Handlers\BladeComponentHandler;
+use App\Lsp\Handlers\BladeDirectiveHandler;
 use Phpactor\LanguageServer\Adapter\Psr\AggregateEventDispatcher;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\PassThroughArgumentResolver;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\LanguageSeverProtocolParamsResolver;

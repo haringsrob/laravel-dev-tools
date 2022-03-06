@@ -3,7 +3,9 @@
 namespace App\Lsp;
 
 use App\DataStore;
+use App\Dto\BladeDirectiveData;
 use App\Dto\SnippetDto;
+use App\Logger;
 use App\Lsp\CompletionRequest;
 use Phpactor\LanguageServerProtocol\CompletionItem;
 use Phpactor\LanguageServerProtocol\CompletionItemKind;
@@ -69,6 +71,40 @@ class CompletionResultFinder
                     );
                 }
             }
+        }
+
+        return $completionItems;
+    }
+
+    /**
+     * @return CompletionItem[]
+     */
+    public function getDirectives(CompletionRequest $completionRequest): array
+    {
+        $directives = $this->dataStore->availableDirectives;
+
+        $completionItems = [];
+
+        /** @var BladeDirectiveData $data */
+        foreach ($directives as $data) {
+            // Check if our search matches.
+            if (strpos($data->name, $completionRequest->search) === false) {
+                continue;
+            }
+
+            // Build the snippet.
+            $snippet = "{$data->name}($0)";
+            if ($data->hasEnd) {
+                $snippet = "{$data->name}()$0end{$data->name}";
+            }
+
+            $completionItems[] = new CompletionItem(
+                label: "$data->name",
+                documentation: $data->name,
+                kind: CompletionItemKind::TEXT,
+                textEdit: new TextEdit($completionRequest->replaceRange, $snippet),
+                insertTextFormat: InsertTextFormat::SNIPPET
+            );
         }
 
         return $completionItems;

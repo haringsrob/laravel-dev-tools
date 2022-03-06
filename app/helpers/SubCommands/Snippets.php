@@ -2,6 +2,7 @@
 
 use App\Dto\Component;
 use App\Dto\Directive;
+use App\Logger;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\Support\Facades\File;
 
@@ -84,12 +85,30 @@ function getDirectives(): array
 {
     $directivesList = [];
     $directives = app('blade.compiler')->getCustomDirectives();
-    foreach (array_keys($directives) as $name) {
+    /** @var \Closure $closure */
+    foreach ($directives as $name => $closure) {
         if (strpos($name, 'end') === 0) {
             continue;
         }
+
+        if ($closure instanceof \Closure) {
+            $r = new ReflectionFunction($closure);
+        } else {
+            $class = $closure[0] ?? null;
+        }
+
         $directiveObj = new Directive();
         $directiveObj->name = $name;
+
+        if ($r && $r->getClosureScopeClass()) {
+            $directiveObj->class = $r->getClosureScopeClass()->name;
+            $directiveObj->file = $r->getClosureScopeClass()->getFileName();
+            $directiveObj->line = $r->getClosureScopeClass()->getStartLine();
+        } else {
+            $directiveObj->class = $class;
+            $directiveObj->file = getClassFile($class);
+        }
+
         $directivesList[$name] = $directiveObj;
     }
     // EndDirectives

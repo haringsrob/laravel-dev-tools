@@ -4,6 +4,7 @@ namespace App;
 
 use App\Dto\SnippetDto;
 use App\Dto\BladeComponentData;
+use App\Dto\BladeDirectiveData;
 use App\Util\Path;
 use Illuminate\Support\Collection;
 use Phar;
@@ -11,10 +12,12 @@ use Phar;
 class DataStore
 {
     public Collection $availableComponents;
+    public Collection $availableDirectives;
 
     public function __construct()
     {
         $this->availableComponents = collect();
+        $this->availableDirectives = collect();
     }
 
     public function refreshAvailableComponents(bool $force = false): Collection
@@ -28,21 +31,40 @@ class DataStore
 
             $result = shell_exec($command);
 
-            if (strpos($result, 'Exception')) {
-                Logger::logdbg($result);
-            }
-
             if ($result) {
                 try {
-                    $this->availableComponents = $this->getComponentsFromData(json_decode($result, true));
+                    $decoded = json_decode($result, true, JSON_THROW_ON_ERROR);
+                    if (!is_array($decoded)) {
+                        return $this->availableComponents;
+                    }
+                    // @todo: Merge these as it is wasting computing power by looping twice.
+                    $this->availableComponents = $this->getComponentsFromData($decoded);
+                    $this->availableDirectives = $this->getDirectivesFromData($decoded);
                 } catch (\Exception $e) {
-                    Logger::logdbg($e->getMessage());
+                    Logger::logException($e);
                 }
-            } else {
-                $this->availableComponents = collect([]);
             }
         }
         return $this->availableComponents;
+    }
+
+    private function getDirectivesFromData(array $data): Collection
+    {
+        $collection = collect([]);
+        foreach ($data as $item) {
+            if (in_array($item['type'], [SnippetDto::TYPE_DIRECTIVE])) {
+                Logger::logdbg($item);
+                $collection->add(new BladeDirectiveData(
+                    name: $item['name'],
+                    hasEnd: $item['hasEnd'],
+                    file: $item['file'] ?? null,
+                    class: $item['class'] ?? null,
+                    line: $item['line'] ?? 0
+                ));
+            }
+        }
+
+        return $collection;
     }
 
     private function getComponentsFromData(array $data): Collection
@@ -62,7 +84,6 @@ class DataStore
                 ));
             }
         }
-
         return $collection;
     }
 }

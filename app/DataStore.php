@@ -53,7 +53,6 @@ class DataStore
         $collection = collect([]);
         foreach ($data as $item) {
             if (in_array($item['type'], [SnippetDto::TYPE_DIRECTIVE])) {
-                Logger::logdbg($item);
                 $collection->add(new BladeDirectiveData(
                     name: $item['name'],
                     hasEnd: $item['hasEnd'],
@@ -74,6 +73,7 @@ class DataStore
             if (in_array($item['type'], [SnippetDto::TYPE_COMPONENT, SnippetDto::TYPE_LIVEWIRE])) {
                 $collection->add(new BladeComponentData(
                     name: $item['name'],
+                    altName: $item['altName'],
                     file: !empty($item['file']) ? $item['file'] : null,
                     class: !empty($item['class']) ? $item['class'] : null,
                     doc: !empty($item['doc']) ? $item['doc'] : null,

@@ -3,6 +3,7 @@
 namespace App\Dto;
 
 use App\DataStore;
+use App\Logger;
 use Illuminate\View\Compilers\ComponentTagCompiler;
 
 class Element
@@ -35,7 +36,7 @@ class Element
                     SnippetDto::TYPE_VIEW
                 ]
             );
-            $this->component = $components->firstWhere('name', $this->name);
+            $this->component = $components->firstWhere('name', $this->name) ?? $components->firstWhere('altName', $this->name);
         }
 
         return $this->component;

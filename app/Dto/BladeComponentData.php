@@ -6,6 +6,7 @@ class BladeComponentData
 {
     public function __construct(
         public string $name,
+        public ?string $altName = null,
         public ?string $file,
         public ?string $class,
         public ?string $doc,

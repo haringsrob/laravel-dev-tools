@@ -2,7 +2,6 @@
 
 use App\Dto\Component;
 use App\Dto\Directive;
-use App\Logger;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\Support\Facades\File;
 
@@ -103,7 +102,7 @@ function getDirectives(): array
         if ($r && $r->getClosureScopeClass()) {
             $directiveObj->class = $r->getClosureScopeClass()->name;
             $directiveObj->file = $r->getClosureScopeClass()->getFileName();
-            $directiveObj->line = $r->getClosureScopeClass()->getStartLine();
+            $directiveObj->line = $r->getStartLine();
         } else {
             $directiveObj->class = $class;
             $directiveObj->file = getClassFile($class);
@@ -139,23 +138,27 @@ function getBladeComponents(): array
     // Get the components from the folder.
     $viewsFiles = getViewsFiles();
     foreach ($viewsFiles as $path => $viewName) {
-        if (str_starts_with($viewName, 'livewire.')) {
+        if (str_starts_with($viewName[0], 'livewire.')) {
             // Not handled here.
             continue;
         }
-        if (str_starts_with($viewName, 'components.')) {
-            $name = str_replace('components.', '', $viewName);
+        if (str_starts_with($viewName[0], 'components.')) {
+            // @todo: Ideally only replaces the first occurance.
+            $name = str_replace('components.', '', $viewName[0]);
+            $altName = str_replace('components-', '', $viewName[1]);
+
             $className = $tagCompiler->guessClassName($name);
 
             $data[] = new Component(
                 name: "x-$name",
+                altName: "x-$altName",
                 file: class_exists($className) ? getClassFile($className) : $path,
                 class: class_exists($className) ? $className : null,
-                views: class_exists($className) ? [$viewName] : []
+                views: class_exists($className) ? [$viewName[0]] : []
             );
         } else {
             $data[] = new Component(
-                name: $viewName,
+                name: $viewName[0],
                 file: $path,
                 views: [],
                 simpleView: true
@@ -195,7 +198,10 @@ function getViewsFiles(): array
                 $relativeToProject = str_replace(getcwd(), '', $file->getPathname());
                 $cleanedPath = str_replace(['/resources/views/', '.blade.php'], '', $relativeToProject);
 
-                $list[$file->getPathname()] = str_replace('/', '.', $cleanedPath);
+                $list[$file->getPathname()] = [
+                    str_replace('/', '.', $cleanedPath),
+                    str_replace('/', '-', $cleanedPath)
+                ];
             }
         }
     }

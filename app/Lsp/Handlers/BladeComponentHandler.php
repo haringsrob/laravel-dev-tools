@@ -21,6 +21,7 @@ use Phpactor\LanguageServerProtocol\ServerCapabilities;
 use Phpactor\LanguageServerProtocol\CompletionOptions;
 use Phpactor\LanguageServerProtocol\DefinitionClientCapabilities;
 use Phpactor\LanguageServerProtocol\DefinitionParams;
+use Phpactor\LanguageServerProtocol\DocumentSymbolClientCapabilities;
 use Phpactor\LanguageServerProtocol\Hover;
 use Phpactor\LanguageServerProtocol\HoverClientCapabilities;
 use Phpactor\LanguageServerProtocol\HoverParams;
@@ -60,6 +61,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         $capabilities->completionProvider = $options;
         $capabilities->definitionProvider = DefinitionClientCapabilities::class;
         $capabilities->hoverProvider = HoverClientCapabilities::class;
+        $capabilities->documentSymbolProvider = DocumentSymbolClientCapabilities::class;
     }
 
     public function methods(): array
@@ -110,6 +112,8 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             $locations = array_values($info->views);
             $locations[] = $info->file;
 
+            $locations = array_unique($locations);
+
             $locationsResponse = [];
 
             $position = new Position(0, 0);
@@ -144,7 +148,6 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             if ($completionRequest->type === self::MATCH_DIRECTIVE) {
                 try {
                     $result = $this->resultFinder->getDirectives($completionRequest);
-                    Logger::logdbg(count($result));
                     return $result;
                 } catch (Exception $e) {
                     Logger::logdbg($e->getMessage());
@@ -327,7 +330,6 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         } else {
             $triggerCharacter = '';
         }
-        Logger::logdbg($triggerCharacter);
 
         // If we are inside of an argument we can just skip.
         if (in_array('"', $searchChars) || in_array('\'', $searchChars)) {

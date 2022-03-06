@@ -12,6 +12,7 @@ class Component implements SnippetDto
 
     public function __construct(
         public string $name,
+        public ?string $altName = null,
         public ?string $file = null,
         array $views = [],
         public ?string $class = null,
@@ -133,6 +134,7 @@ class Component implements SnippetDto
     {
         return [
             'name' => $this->name,
+            'altName' => $this->altName,
             'file' => $this->file,
             'class' => $this->class,
             'doc' => $this->classDoc,

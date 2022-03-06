@@ -33,7 +33,11 @@ class DataStore
             }
 
             if ($result) {
-                $this->availableComponents = $this->getComponentsFromData(json_decode($result, true));
+                try {
+                    $this->availableComponents = $this->getComponentsFromData(json_decode($result, true));
+                } catch (\Exception $e) {
+                    Logger::logdbg($e->getMessage());
+                }
             } else {
                 $this->availableComponents = collect([]);
             }

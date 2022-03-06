@@ -110,7 +110,13 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
                 return false;
             }
 
-            $completionRequest = $this->getCompletionRequest($params->textDocument, $params->position);
+            // Catch an exception if thrown.
+            try {
+                $completionRequest = $this->getCompletionRequest($params->textDocument, $params->position);
+            } catch (Exception $e) {
+                Logger::logException($e);
+                return;
+            }
 
             if ($completionRequest->type === self::MATCH_COMPONENT) {
                 try {
@@ -188,7 +194,13 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             $offsetLeft--;
         }
 
-        $triggerCharacter = $textDocument->text[$byteOffset->toInt() + 1];
+        // @todo: Why isnt this just the current?
+        if ($byteOffset->toInt() > 0) {
+            $triggerCharacter = $textDocument->text[$byteOffset->toInt() - 1];
+        } else {
+            $triggerCharacter = '';
+        }
+        Logger::logdbg($triggerCharacter);
 
         // If we are inside of an argument we can just skip.
         if (in_array('"', $searchChars) || in_array('\'', $searchChars)) {
@@ -196,7 +208,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         }
 
         // Nothing else to do here.
-        if ($type === self::MATCH_NONE) {
+        if ($type === self::MATCH_NONE || null === $type) {
             return null;
         }
 
@@ -207,6 +219,11 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         $docLength = strlen($textDocument->text);
         $fullEndIndex = 0;
         while ($offsetRight && !$foundEnd) {
+            if (!isset($textDocument->text[$offsetRight])) {
+                $foundEnd = true;
+                $fullEndIndex = $offsetRight - 1;
+                continue;
+            }
             $char = $textDocument->text[$offsetRight];
 
             if (in_array($char, $endMatchers)) {
@@ -226,7 +243,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         // Now the $chars contains the full element.
         // Extract the name.
         $fullElement = join('', array_reverse($chars));
-        $name = ltrim(strtok($fullElement, " "), '<');
+        $name = rtrim(ltrim(strtok($fullElement, " "), '<'), '>');
 
         $element = new Element(
             $name,

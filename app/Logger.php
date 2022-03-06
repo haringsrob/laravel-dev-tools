@@ -11,6 +11,15 @@ class Logger
         return new \Wa72\SimpleLogger\FileLogger('/Users/rob/Sites/laravel-dev-generators/log.txt');
     }
 
+    public static function logException(\Exception $e): void
+    {
+        $message = $e->getMessage();
+        $line = $e->getLine();
+        $file = $e->getFile();
+
+        self::logdbg($message . ' IN . ' . $file . ' ON LINE ' . $line);
+    }
+
     public static function logdbg($data): void
     {
         ob_start();

@@ -95,7 +95,7 @@ class CompletionResultFinder
             // Build the snippet.
             $snippet = "{$data->name}($0)";
             if ($data->hasEnd) {
-                $snippet = "{$data->name}()$0end{$data->name}";
+                $snippet = "{$data->name}()\n$0\n@end{$data->name}";
             }
 
             $completionItems[] = new CompletionItem(

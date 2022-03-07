@@ -6,6 +6,14 @@ The laravel lsp provides:
 - Blade directvies autocomplete
 - [ ] Suggestions for config() and view(), and goto definition for view() calls.
 
+## Obfuscate
+
+`/Users/rob/Sites/test/yakpro-po/yakpro-po.php`
+
+Example:
+```
+php -d memory_limit=-1 /Users/rob/Sites/test/yakpro-po/yakpro-po.php laravel-dev-generators -o laravel-dev-generators-obf --no-obfuscate-constant-name
+```
 
 ## Building
 

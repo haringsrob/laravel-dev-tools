@@ -7,14 +7,14 @@ use Phar;
 
 use function base_path;
 
-class GenerateSnippets extends Command
+class RunCommand extends Command
 {
     /**
      * The signature of the command.
      *
      * @var string
      */
-    protected $signature = 'snippets {path}';
+    protected $signature = 'run-command {path} {commandtorun}';
 
     /**
      * Execute the console command.
@@ -24,6 +24,7 @@ class GenerateSnippets extends Command
     public function handle()
     {
         $path = $this->argument('path');
+        $command = $this->argument('commandtorun');
         $runner = base_path('app/helpers/runner.php');
 
         $baseDir = __DIR__ . '/../../';
@@ -34,7 +35,8 @@ class GenerateSnippets extends Command
         $argv = [
             '',
             $path,
-            'snippets',
+            'command',
+            $command
         ];
 
         $script = file_get_contents($runner);

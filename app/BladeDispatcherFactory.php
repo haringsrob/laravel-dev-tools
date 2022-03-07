@@ -2,10 +2,13 @@
 
 namespace App;
 
+use App\Lsp\CodeActionProvider;
+use App\Lsp\Commands\CreateComponentCommand;
 use App\Lsp\Handlers\BladeComponentHandler;
 use App\Lsp\Handlers\BladeValidatorHandler;
 use Phpactor\LanguageServer\Adapter\Psr\AggregateEventDispatcher;
-use Phpactor\LanguageServer\Core\Diagnostics\AggregateDiagnosticsProvider;
+use Phpactor\LanguageServer\Core\CodeAction\AggregateCodeActionProvider;
+use Phpactor\LanguageServer\Core\Command\CommandDispatcher;
 use Phpactor\LanguageServer\Core\Diagnostics\DiagnosticsEngine;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\PassThroughArgumentResolver;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\LanguageSeverProtocolParamsResolver;
@@ -30,7 +33,9 @@ use Phpactor\LanguageServer\Core\Service\ServiceManager;
 use Phpactor\LanguageServer\Core\Service\ServiceProviders;
 use Phpactor\LanguageServer\Handler\System\ExitHandler;
 use Phpactor\LanguageServer\Handler\System\ServiceHandler;
+use Phpactor\LanguageServer\Handler\TextDocument\CodeActionHandler;
 use Phpactor\LanguageServer\Handler\TextDocument\TextDocumentHandler;
+use Phpactor\LanguageServer\Handler\Workspace\CommandHandler;
 use Phpactor\LanguageServer\Handler\Workspace\DidChangeWatchedFilesHandler;
 use Phpactor\LanguageServer\Listener\DidChangeWatchedFilesListener;
 use Phpactor\LanguageServer\Listener\ServiceListener;
@@ -59,7 +64,7 @@ class BladeDispatcherFactory implements DispatcherFactory
         $store = new DataStore();
 
         $diagnosticsService = new DiagnosticsService(
-            new DiagnosticsEngine($clientApi, new BladeValidatorHandler($store))
+            $diagnosticsEngine = new DiagnosticsEngine($clientApi, new BladeValidatorHandler($store))
         );
 
         $serviceProviders = new ServiceProviders($diagnosticsService);
@@ -67,6 +72,19 @@ class BladeDispatcherFactory implements DispatcherFactory
         $workspace = new Workspace();
 
         $serviceManager = new ServiceManager($serviceProviders, $this->logger);
+
+        $commandHandler = new CommandHandler(
+            new CommandDispatcher([
+                'create_component' => new CreateComponentCommand($clientApi, $store, $diagnosticsEngine)
+            ])
+        );
+
+        $codeActionHandler = new CodeActionHandler(
+            new AggregateCodeActionProvider(
+                new CodeActionProvider($store)
+            ),
+            $workspace
+        );
 
         $eventDispatcher = new AggregateEventDispatcher(
             new ServiceListener($serviceManager),
@@ -80,6 +98,8 @@ class BladeDispatcherFactory implements DispatcherFactory
             new ServiceHandler($serviceManager, $clientApi),
             new DidChangeWatchedFilesHandler($eventDispatcher),
             new BladeComponentHandler($this->logger, $workspace, $store),
+            $commandHandler,
+            $codeActionHandler,
             new ExitHandler()
         );
 

@@ -20,14 +20,42 @@ class DataStore
         $this->availableDirectives = collect();
     }
 
+    public function executeCommandAndRefresh(string $command): string
+    {
+        return $this->executeCommand($command, true);
+    }
+
+    public function executeCommand(string $commandString, bool $refresh = false): string
+    {
+        $command = $this->getRunner() . ' run-command ' . getcwd() . " \"$commandString\"";
+
+        Logger::logdbg($command);
+
+        $result = shell_exec($command);
+
+        Logger::logdbg($result);
+
+        if ($refresh) {
+            $this->refreshAvailableComponents(true);
+        }
+
+        return $result ?? '';
+    }
+
+    private function getRunner(): string
+    {
+        $commandBase = PHP_BINARY . ' ' . Path::getBaseDir() . 'laravel-dev-generators';
+        if ($phar = Phar::running(false)) {
+            return $phar;
+        }
+
+        return $commandBase;
+    }
+
     public function refreshAvailableComponents(bool $force = false): Collection
     {
         if ($this->availableComponents->isEmpty() || $force) {
-            $commandBase = PHP_BINARY . ' ' . Path::getBaseDir() . 'laravel-dev-generators';
-            if ($phar = Phar::running(false)) {
-                $commandBase = $phar;
-            }
-            $command = $commandBase . ' snippets --return ' . getcwd();
+            $command = $this->getRunner() . ' snippets ' . getcwd();
 
             $result = shell_exec($command);
 

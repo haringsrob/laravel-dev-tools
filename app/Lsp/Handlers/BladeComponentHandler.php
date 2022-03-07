@@ -148,6 +148,9 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             // Catch an exception if thrown.
             try {
                 $completionRequest = $this->getCompletionRequest($params->textDocument, $params->position);
+                if (!$completionRequest) {
+                    return;
+                }
             } catch (Exception $e) {
                 Logger::logException($e);
                 return;

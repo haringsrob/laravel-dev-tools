@@ -3,8 +3,10 @@
 namespace App;
 
 use App\Lsp\Handlers\BladeComponentHandler;
-use App\Lsp\Handlers\BladeDirectiveHandler;
+use App\Lsp\Handlers\BladeValidatorHandler;
 use Phpactor\LanguageServer\Adapter\Psr\AggregateEventDispatcher;
+use Phpactor\LanguageServer\Core\Diagnostics\AggregateDiagnosticsProvider;
+use Phpactor\LanguageServer\Core\Diagnostics\DiagnosticsEngine;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\PassThroughArgumentResolver;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\LanguageSeverProtocolParamsResolver;
 use Phpactor\LanguageServer\Core\Dispatcher\ArgumentResolver\ChainArgumentResolver;
@@ -33,6 +35,7 @@ use Phpactor\LanguageServer\Handler\Workspace\DidChangeWatchedFilesHandler;
 use Phpactor\LanguageServer\Listener\DidChangeWatchedFilesListener;
 use Phpactor\LanguageServer\Listener\ServiceListener;
 use Phpactor\LanguageServer\Middleware\HandlerMiddleware;
+use Phpactor\LanguageServer\Service\DiagnosticsService;
 use Psr\Log\LoggerInterface;
 
 class BladeDispatcherFactory implements DispatcherFactory
@@ -53,18 +56,23 @@ class BladeDispatcherFactory implements DispatcherFactory
 
         $clientApi = new ClientApi(new JsonRpcClient($transmitter, $responseWatcher));
 
-        $workspace = new Workspace();
-
         $store = new DataStore();
 
-        $serviceProviders = new ServiceProviders();
+        $diagnosticsService = new DiagnosticsService(
+            new DiagnosticsEngine($clientApi, new BladeValidatorHandler($store))
+        );
+
+        $serviceProviders = new ServiceProviders($diagnosticsService);
+
+        $workspace = new Workspace();
 
         $serviceManager = new ServiceManager($serviceProviders, $this->logger);
 
         $eventDispatcher = new AggregateEventDispatcher(
             new ServiceListener($serviceManager),
             new WorkspaceListener($workspace),
-            new DidChangeWatchedFilesListener($clientApi, ['**/*.php'], $initializeParams->capabilities)
+            new DidChangeWatchedFilesListener($clientApi, ['**/*.blade.php'], $initializeParams->capabilities),
+            $diagnosticsService,
         );
 
         $handlers = new Handlers(
@@ -88,8 +96,8 @@ class BladeDispatcherFactory implements DispatcherFactory
             new InitializeMiddleware($handlers, $eventDispatcher, [
                 'version' => 1,
             ]),
-            new ResponseHandlingMiddleware($responseWatcher),
             new CancellationMiddleware($runner),
+            new ResponseHandlingMiddleware($responseWatcher),
             new HandlerMiddleware($runner)
         );
     }

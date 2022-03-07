@@ -29,6 +29,8 @@ use Phpactor\LanguageServerProtocol\Location;
 use Phpactor\LanguageServerProtocol\Position;
 use Phpactor\LanguageServerProtocol\Range;
 use Phpactor\LanguageServerProtocol\TextDocumentIdentifier;
+use Phpactor\LanguageServerProtocol\TextDocumentSyncKind;
+use Phpactor\LanguageServerProtocol\WorkspaceClientCapabilities;
 use Phpactor\TextDocument\TextDocumentUri;
 use Psr\Log\LoggerInterface;
 
@@ -69,8 +71,14 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         return [
             'textDocument/hover' => 'hover',
             'textDocument/definition' => 'definition',
-            'textDocument/completion' => 'complete'
+            'textDocument/completion' => 'complete',
+            'textDocument/documentSymbol' => 'null',
         ];
+    }
+
+    public function null()
+    {
+        return new Success();
     }
 
     private function getDirectiveForName(string $name): ?BladeDirectiveData
@@ -372,7 +380,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         // Now the $chars contains the full element.
         // Extract the name.
         $fullElement = join('', array_reverse($chars));
-        $name = rtrim(ltrim(strtok($fullElement, " "), '<'), '>');
+        $name = rtrim(rtrim(ltrim(strtok($fullElement, " "), '<'), '>'), '/');
 
         $element = new Element(
             $name,

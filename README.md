@@ -1,6 +1,6 @@
 # Laravel lsp
 
-The laravel lsp provides:
+The Laravel/Blade lsp provides:
 
 Blade:
 - [x] Diagnostics on missing components + action to create it.
@@ -50,9 +50,13 @@ information it needs. (Much like running laravel-ide-helper).
 
 ### Vscode
 
+Install Name: [laravel-blade syntax](https://marketplace.visualstudio.com/items?itemName=cjhowe7.laravel-blade)
+
 Download the extension from the vscode extensions.
 
 ### (Neo)vim
+
+Download the compiled version from the releases then use it to setup the lsp:
 
 This depends on your setup, below are instruction for using it with `nvim-lspconfig`
 

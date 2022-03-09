@@ -1,9 +1,9 @@
 {
-    "name": "vscode-blade-lsp",
+    "name": "vscode-laravel-dev-tools",
     "version": "1.0.1",
-    "description": "Laravel Blade lsp",
+    "description": "Laravel dev tools - Blade lsp",
     "main": "lib/extension.js",
-    "publisher": "haringsrob",
+    "publisher": "haringsbe-haringsrob",
     "engines": {
         "vscode": "^1.43.0"
     },
@@ -46,6 +46,6 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/haringsrob/laravel-dev-generators"
+        "url": "https://github.com/haringsrob/laravel-dev-tools"
     }
 }

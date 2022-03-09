@@ -29,8 +29,6 @@ use Phpactor\LanguageServerProtocol\Location;
 use Phpactor\LanguageServerProtocol\Position;
 use Phpactor\LanguageServerProtocol\Range;
 use Phpactor\LanguageServerProtocol\TextDocumentIdentifier;
-use Phpactor\LanguageServerProtocol\TextDocumentSyncKind;
-use Phpactor\LanguageServerProtocol\WorkspaceClientCapabilities;
 use Phpactor\TextDocument\TextDocumentUri;
 use Psr\Log\LoggerInterface;
 
@@ -161,21 +159,21 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
                     $result = $this->resultFinder->getDirectives($completionRequest);
                     return $result;
                 } catch (Exception $e) {
-                    Logger::logdbg($e->getMessage());
+                    Logger::logException($e);
                     return [];
                 }
             } elseif ($completionRequest->type === self::MATCH_COMPONENT) {
                 try {
                     return $this->resultFinder->getComponents($completionRequest);
                 } catch (Exception $e) {
-                    Logger::logdbg($e->getMessage());
+                    Logger::logException($e);
                     return [];
                 }
             } elseif ($completionRequest->type === self::MATCH_PARAM) {
                 try {
                     return $this->resultFinder->getArguments($completionRequest);
                 } catch (Exception $e) {
-                    Logger::logdbg($e->getMessage());
+                    Logger::logException($e);
                     return [];
                 }
             }
@@ -184,8 +182,10 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         });
     }
 
-    private function getBladeDirectiveRequest(TextDocumentIdentifier $textDocument, Position $position): ?CompletionRequest
-    {
+    private function getBladeDirectiveRequest(
+        TextDocumentIdentifier $textDocument,
+        Position $position
+    ): ?CompletionRequest {
         $textDocument = $this->workspace->get($textDocument->uri);
         $byteOffset = PositionConverter::positionToByteOffset($position, $textDocument->text);
 

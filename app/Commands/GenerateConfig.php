@@ -2,9 +2,11 @@
 
 namespace App\Commands;
 
-use Illuminate\Console\Scheduling\Schedule;
 use LaravelZero\Framework\Commands\Command;
 
+/**
+ * @todo: currently not functional
+ */
 class GenerateConfig extends Command
 {
     /**

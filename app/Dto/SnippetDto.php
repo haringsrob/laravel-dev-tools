@@ -9,6 +9,5 @@ interface SnippetDto
     public const TYPE_LIVEWIRE = 'livewire';
     public const TYPE_VIEW = 'view';
 
-    public function toEntry(): Snippet;
     public function toArray(): array;
 }

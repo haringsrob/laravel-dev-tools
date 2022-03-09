@@ -10,19 +10,6 @@ class Directive implements SnippetDto
     public ?string $class = null;
     public int $line = 0;
 
-    public function toEntry(): Snippet
-    {
-        $body = "@{$this->name}";
-
-        if ($this->hasEnd) {
-            $body .= "()\n$0\n@end{$this->name}";
-        } else {
-            $body .= "($0)";
-        }
-
-        return new Snippet($this->name, "@{$this->name}", $body);
-    }
-
     public function toArray(): array
     {
         return [

@@ -19,31 +19,19 @@ include_once(__DIR__ . '/../../Reflection/StringHelper.php');
  *
  * @return mixed
  */
-function handle(array $options = [])
+function handle()
 {
     $arrayFinal = [];
     foreach (getDirectives() as $final) {
-        if ($options['snippets'] ?? false) {
-            $arrayFinal[$final->name] = $final->toEntry();
-        } else {
-            $arrayFinal[$final->name] = $final->toArray();
-        }
+        $arrayFinal[$final->name] = $final->toArray();
     }
 
     foreach (getLivewireComponents() as $final) {
-        if ($options['snippets'] ?? false) {
-            $arrayFinal[$final->name] = $final->toEntry();
-        } else {
-            $arrayFinal[$final->name] = $final->toArray();
-        }
+        $arrayFinal[$final->name] = $final->toArray();
     }
 
     foreach (getBladeComponents() as $final) {
-        if ($options['snippets'] ?? false) {
-            $arrayFinal[$final->name] = $final->toEntry();
-        } else {
-            $arrayFinal[$final->name] = $final->toArray();
-        }
+        $arrayFinal[$final->name] = $final->toArray();
     }
 
     echo json_encode($arrayFinal, JSON_PRETTY_PRINT);

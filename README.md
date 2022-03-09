@@ -2,30 +2,122 @@
 
 The laravel lsp provides:
 
-- [ ]Blade/livewire component autocomplete and goto definition
-- Blade directvies autocomplete
-- [ ] Suggestions for config() and view(), and goto definition for view() calls.
+Blade:
+- [x] Diagnostics on missing components + action to create it.
+- [x] Autocomplete for components and their arguments.
+- [x] Hover shows the path to the view.
+- [x] Goto definition on components to jump to the view or component class.
+- [x] Blade directive autocomplete for non default directives. (For default directives there are many snippet extensions available)
 
-## Obfuscate
+Livewire:
+- [x] Autocomplete for livewire components and their arguments.
+- [x] Goto definition to the livewire class (not yet the view).
+- [x] Hover shows the path to the view.
+- [ ] Diagnostics on missing components + action to create it.
 
-`/Users/rob/Sites/test/yakpro-po/yakpro-po.php`
+Other (plans):
+- [ ] Suggestions for config()
+- [ ] view() suggestions, and goto definition for view() calls.
 
-Example:
+## Demo
+
+![Demo](./screenshots/demo-blade-lsp.gif)
+
+## Status
+
+This LSP is still to be considered unstable. If you find issues, you are welcome to provide a
+issue/pull request with a *reproducable example*.
+
+Issues without clear steps to reproduce may be closed without answer.
+
+As it is experimental, there is no guarantee whatsoever that this will work. Please always ensure
+your code is under version control.
+
+Thing may be slow.
+
+## Installation
+
+### Requirements
+
+PHP 8.0, older versions will NOT work. (not even trying).
+LARAVEL 8.0, older versions will NOT work.
+
+This LSP is based on php in your runtime. I have not tested this with docker so for now assume it
+will not work from outside.
+
+Your application needs to be bootable. This LSP will run commands in your codebase to get all the
+information it needs. (Much like running laravel-ide-helper).
+
+### Vscode
+
+Download the extension from the vscode extensions.
+
+### (Neo)vim
+
+This depends on your setup, below are instruction for using it with `nvim-lspconfig`
+
+``` lua
+local lspconfig = require'lspconfig'
+local configs = require 'lspconfig.configs'
+
+-- Configure it
+configs.blade = {
+  default_config = {
+    -- Path to the executable: laravel-dev-generators
+    cmd = { "laravel-dev-generators", "lsp" },
+    filetypes = {'blade'};
+    root_dir = function(fname)
+      return lspconfig.util.find_git_ancestor(fname)
+    end;
+    settings = {};
+  };
+}
+-- Set it up
+lspconfig.blade.setup{
+  -- Capabilities is specific to my setup.
+  capabilities = capabilities
+}
 ```
-php -d memory_limit=-1 /Users/rob/Sites/test/yakpro-po/yakpro-po.php laravel-dev-generators -o laravel-dev-generators-obf --no-obfuscate-constant-name
+
+## Building from source
+
+This LSP is based on the great work in [phpactor/language-server](https://github.com/phpactor/language-server)
+
+As it is php it actually does not need building, but we can still do this by makeing a phar so it is easier to distribute.
+
+To build the phar you run:
+
+```
+./laravel-dev-tools app:build
 ```
 
-## Building
+### Building the vscode extension
 
-1. Clone https://github.com/php/php-src (8.1)
-2. Clone `git clone git@github.com:dixyes/phpmicro.git sapi/icro`
-3. Patch:
+To build the vscode extension we have to build the phar and copy it to the extension's directory:
+
 ```
-patch -p1 < sapi/micro/patches/cli_checks.patch
-patch -p1 < ./sapi/micro/patches/vcruntime140_80.patch
-patch -p1 < ./sapi/micro/patches/win32_80.patch
-patch -p1 < ./sapi/micro/patches/zend_stream.patch
+./laravel-dev-tools app:build --build-version=1 && cp builds/laravel-dev-tools extensions/vscode/laravel-dev-tools
 ```
-4. Run `./buildconf --force`
-4. Configure: `./configure --disable-all --enable-micro --disable-zts --enable-ctype --enable-filter --enable-mbstring --enable-session --enable-tokenizer --enable-phar`
-5. Build `make micro -j8`
+
+Then in the `extensions/vscode` directory we do:
+
+Install npm modules: `npm install`
+
+Then make the package: `npm run package`
+
+(for me: publish using `vsce publish`)
+
+## Licence notes
+
+This project is based on [Laravel Zero](https://github.com/laravel-zero/laravel-zero)
+
+It uses [phpactor/language-server](https://github.com/phpactor/language-server) for the LSP layer.
+
+Other packages used are:
+- [Spatie invade](https://github.com/spatie/invade)
+- [Laravel](https://github.com/laravel/framework)
+- [SimpleLogger](https://github.com/wa72/simplelogger)
+
+## Todo's
+
+- [ ] Auto copy the readme/Licence to the extension folder when building.

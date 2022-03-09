@@ -5,7 +5,6 @@ namespace App\Lsp;
 use App\DataStore;
 use App\Dto\BladeDirectiveData;
 use App\Dto\SnippetDto;
-use App\Logger;
 use App\Lsp\CompletionRequest;
 use Phpactor\LanguageServerProtocol\CompletionItem;
 use Phpactor\LanguageServerProtocol\CompletionItemKind;

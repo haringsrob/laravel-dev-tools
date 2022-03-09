@@ -19,8 +19,7 @@
         "prepare": "yarn clean && yarn build",
         "vscode:prepublish": "npm run esbuild-base -- --minify",
         "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
-        "copybinary": "cp ../../builds/laravel-dev-generators .",
-        "package": "npm run copybinary && npm run clean && npm run build && vsce package"
+        "package": "npm run clean && npm run build && vsce package"
     },
     "activationEvents": [
         "onLanguage:php",

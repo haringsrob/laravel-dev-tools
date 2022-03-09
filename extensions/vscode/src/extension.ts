@@ -11,7 +11,7 @@ const LanguageID = 'blade';
 let languageClient: LanguageClient;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    const cmd = context.asAbsolutePath('laravel-dev-generators') as any;
+    const cmd = context.asAbsolutePath('laravel-dev-tools') as any;
     languageClient = createClient(cmd);
 
     languageClient.start();

@@ -1,5 +1,6 @@
 <?php
 
+// @todo: This can be refactored out as it is using eval.
 $projectPath = $argv[1];
 unset($argv[1]);
 
@@ -23,8 +24,7 @@ $options = [];
 
 if ($argv[2] === 'command') {
     include_once $baseDir . '/app/helpers/SubCommands/ExecuteArtisan.php';
-}
-if ($argv[2] === 'views') {
+} elseif ($argv[2] === 'views') {
     include_once $baseDir . '/app/helpers/SubCommands/Views.php';
 } elseif ($argv[2] === 'config') {
     include_once $baseDir . '/app/helpers/SubCommands/Config.php';

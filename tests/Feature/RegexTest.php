@@ -3,9 +3,6 @@
 namespace Tests\Feature;
 
 use App\Lsp\DiagnosticError;
-use Illuminate\View\Compilers\ComponentTagCompiler;
-use SebastianBergmann\RecursionContext\InvalidArgumentException;
-use PHPUnit\Framework\ExpectationFailedException;
 use Tests\TestCase;
 
 class RegexTest extends TestCase

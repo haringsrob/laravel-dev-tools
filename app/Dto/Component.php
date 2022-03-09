@@ -56,34 +56,6 @@ class Component implements SnippetDto
         return false;
     }
 
-    public function toEntry(): Snippet
-    {
-        $body = "<{$this->name}";
-
-        $i = 1;
-
-        $skipArgs = ['componentName', 'attributes'];
-        if ($this->livewire) {
-            $skipArgs = [...$skipArgs, 'id', 'redirectTo'];
-        }
-
-        foreach (array_keys($this->arguments) as $name) {
-            if (in_array($name, $skipArgs)) {
-                continue;
-            }
-            $body .= " {$name}=\"$$i\"";
-            $i++;
-        }
-
-        if ($this->livewire) {
-            $body .= "/>$0";
-        } else {
-            $body .= ">$0</{$this->name}>";
-        }
-
-        return new Snippet($this->name, "<{$this->name}", $body);
-    }
-
     private function getClassDoc(): ?string
     {
         if (!$this->class) {

@@ -57,7 +57,11 @@ class DataStore
         if ($this->availableComponents->isEmpty() || $force) {
             $command = $this->getRunner() . ' snippets ' . getcwd();
 
+            Logger::logdbg($command);
+
             $result = shell_exec($command);
+
+            Logger::logdbg($result);
 
             if ($result) {
                 try {

@@ -5,7 +5,6 @@ namespace App\Lsp\Commands;
 use Amp\Promise;
 use Amp\Success;
 use App\DataStore;
-use App\Logger;
 use Illuminate\Support\Str;
 use Phpactor\LanguageServer\Core\Command\Command;
 use Phpactor\LanguageServer\Core\Diagnostics\DiagnosticsEngine;
@@ -23,7 +22,6 @@ class CreateComponentCommand implements Command
 
     public function __invoke(string $name, array $textDocument): Promise
     {
-        Logger::logdbg($textDocument);
         $name = Str::Studly($name);
         $result = $this->dataStore->executeCommandAndRefresh("make:component $name");
         if (empty($result)) {

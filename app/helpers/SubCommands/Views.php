@@ -1,12 +1,12 @@
-
 <?php
 
-use Illuminate\Console\Command;
+/**
+ * Currently unused by this package, but I already have wip for:
+ * view('<autocomplete'>);
+ */
+
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\View;
-use Illuminate\View\Factory;
-use Illuminate\View\FileViewFinder;
 
 function handle()
 {

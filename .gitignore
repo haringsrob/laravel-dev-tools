@@ -6,3 +6,4 @@
 log.txt
 builds
 extensions/vscode/laravel-dev-generators
+extensions/vscode/laravel-dev-tools

@@ -3,7 +3,6 @@
 namespace App\Dto;
 
 use App\DataStore;
-use App\Logger;
 use Illuminate\View\Compilers\ComponentTagCompiler;
 
 class Element

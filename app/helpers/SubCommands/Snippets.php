@@ -2,6 +2,7 @@
 
 use App\Dto\Component;
 use App\Dto\Directive;
+use App\Reflection\ReflectionClass;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\Support\Facades\File;
 
@@ -123,6 +124,63 @@ function getBladeComponents(): array
         $blade
     );
 
+    // Get all clases in a namespace.
+    // The below is a rather complex way to figure out all registered components. But hey, it works!
+    foreach ($blade->getClassComponentNamespaces() as $key => $namespace) {
+        // Figure out the base path of the namespace.
+        $exploded = explode('\\', $namespace);
+        $baseNamespace = implode('\\', array_slice($exploded, 0, 2));
+        $classes = classesInNamespace($baseNamespace);
+
+        $serviceProvider = null;
+        foreach ($classes as $className) {
+            // We prefer to use the PackageNameServiceProvider.
+            if (str_contains($className, $exploded[0] . 'ServiceProvider')) {
+                $serviceProvider = $baseNamespace . '\\' . $className;
+                break;
+            }
+            if (str_contains($className, 'ServiceProvider')) {
+                $serviceProvider = $baseNamespace . '\\' . $className;
+                break;
+            }
+        }
+
+        if (!$serviceProvider) {
+            // No service provider was found.
+            continue;
+        }
+
+        $reflection = new ReflectionClass($serviceProvider);
+        $reflection->getFileName();
+
+        $explodedPath = explode(DIRECTORY_SEPARATOR, $reflection->getFileName());
+        array_pop($explodedPath);
+        $path = implode(DIRECTORY_SEPARATOR, $explodedPath);
+
+        $pathToLoad = $path . str_replace('\\', DIRECTORY_SEPARATOR, str_replace($baseNamespace, '', $namespace));
+
+        $iterator = new RecursiveDirectoryIterator($pathToLoad, RecursiveDirectoryIterator::SKIP_DOTS);
+        $files = new RecursiveIteratorIterator($iterator);
+        foreach ($files as $file) {
+            require_once $pathToLoad . DIRECTORY_SEPARATOR . $file->getFileName();
+        }
+
+        $classes = classesInNamespace($namespace);
+
+        foreach ($classes as $class) {
+            $fileOrClass = $namespace . '\\' . $class;
+            $splitted = explode('/', $class);
+            $name = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', array_pop($splitted)));
+
+            $data[] = new Component(
+                name: "x-$key::$name",
+                file: getClassFile($fileOrClass),
+                views: extractViewNames($fileOrClass),
+                class: $fileOrClass,
+            );
+        }
+    }
+
     // Get the components from the folder.
     $viewsFiles = getViewsFiles();
     foreach ($viewsFiles as $path => $viewName) {
@@ -175,6 +233,20 @@ function getBladeComponents(): array
     return $data;
 }
 
+function classesInNamespace($namespace)
+{
+    $namespace .= '\\';
+    $myClasses  = array_filter(get_declared_classes(), function ($item) use ($namespace) {
+        return substr($item, 0, strlen($namespace)) === $namespace;
+    });
+    $theClasses = [];
+    foreach ($myClasses as $class) {
+        $theParts = explode('\\', $class);
+        $theClasses[] = end($theParts);
+    }
+    return $theClasses;
+}
+
 function getViewsFiles(): array
 {
     $list = [];
@@ -222,10 +294,13 @@ function getBlade(): BladeCompiler
     return app('blade.compiler');
 }
 
-function getClassFile(string $class): string
+function getClassFile(string $class): ?string
 {
-    $class = new \ReflectionClass($class);
-    return $class->getFileName();
+    if (class_exists($class)) {
+        $class = new \ReflectionClass($class);
+        return $class->getFileName();
+    }
+    return null;
 }
 
 function getPossibleAttributes(string $class): array

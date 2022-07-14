@@ -44,7 +44,7 @@ class DataStore
 
     private function getRunner(): string
     {
-        $commandBase = PHP_BINARY . ' ' . Path::getBaseDir() . 'laravel-dev-generators';
+        $commandBase = PHP_BINARY . ' ' . Path::getBaseDir() . 'laravel-dev-tools';
         if ($phar = Phar::running(false)) {
             return $phar;
         }

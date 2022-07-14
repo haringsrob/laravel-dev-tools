@@ -58,7 +58,7 @@ class Component implements SnippetDto
 
     private function getClassDoc(): ?string
     {
-        if (!$this->class) {
+        if (!$this->class || !class_exists($this->class)) {
             return null;
         }
 
@@ -69,7 +69,7 @@ class Component implements SnippetDto
 
     private function getPossibleAttributes(): array
     {
-        if (!$this->class) {
+        if (!$this->class || !class_exists($this->class)) {
             return [];
         }
 

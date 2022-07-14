@@ -15,7 +15,6 @@ unset($argv[1]);
 require $projectPath . '/vendor/autoload.php';
 
 $app = require_once $projectPath . '/bootstrap/app.php';
-
 $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
 
 $kernel->bootstrap();

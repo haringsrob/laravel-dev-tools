@@ -21,6 +21,29 @@ class CompletionResultFinder
     }
 
     /**
+     * @return array<int,Phpactor\LanguageServerProtocol\CompletionItem>
+     */
+    public function getWireableValues(CompletionRequest $completionRequest): array
+    {
+        $completionItems = [];
+        // Safeguard
+        if ($component = $completionRequest->component) {
+            foreach ($component->wireProps as $prop => $info) {
+                $completionItems[] = new CompletionItem(
+                    label: $prop,
+                    detail: $info,
+                    documentation: 'Wirable property: ' . $prop,
+                    kind: CompletionItemKind::TYPE_PARAMETER,
+                    insertText: $prop,
+                    insertTextFormat: InsertTextFormat::PLAIN_TEXT
+                );
+            }
+        }
+
+        return $completionItems;
+    }
+
+    /**
      * @return CompletionItem[]
      */
     public function getArguments(CompletionRequest $completionRequest): array

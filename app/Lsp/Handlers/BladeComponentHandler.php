@@ -6,6 +6,7 @@ use Amp\CancellationToken;
 use Amp\Promise;
 use Amp\Success;
 use App\DataStore;
+use App\Dto\BladeComponentData;
 use App\Dto\BladeDirectiveData;
 use App\Dto\Element;
 use App\Logger;
@@ -43,6 +44,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
     private const MATCH_NONE = 'none';
     private const MATCH_COMPONENT = 'component';
     private const MATCH_DIRECTIVE = 'directive';
+    private const MATCH_WIRE = 'wire';
 
     public function __construct(LoggerInterface $logger, Workspace $workspace, DataStore $store)
     {
@@ -74,7 +76,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         ];
     }
 
-    public function null()
+    public function null(): \Amp\Success
     {
         return new Success();
     }
@@ -146,6 +148,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             // Catch an exception if thrown.
             try {
                 $completionRequest = $this->getCompletionRequest($params->textDocument, $params->position);
+
                 if (!$completionRequest) {
                     return;
                 }
@@ -172,6 +175,13 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             } elseif ($completionRequest->type === self::MATCH_PARAM) {
                 try {
                     return $this->resultFinder->getArguments($completionRequest);
+                } catch (Exception $e) {
+                    Logger::logException($e);
+                    return [];
+                }
+            } elseif ($completionRequest->type === self::MATCH_WIRE) {
+                try {
+                    return $this->resultFinder->getWireableValues($completionRequest);
                 } catch (Exception $e) {
                     Logger::logException($e);
                     return [];
@@ -342,8 +352,54 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             $triggerCharacter = '';
         }
 
-        // If we are inside of an argument we can just skip.
+        // If we are inside an argument we need different completion options.
         if (in_array('"', $searchChars) || in_array('\'', $searchChars)) {
+            // Check if it is a wire:model string.
+            $string = trim(implode("", array_reverse($searchChars)));
+            if (str_starts_with($string, 'wire:model')) {
+                // Now we know it is a wire property. Now we need the search string.
+                $search = null;
+                if (in_array('"', $searchChars)) {
+                    $search = explode('"', $string)[1];
+                }
+                if (in_array('\'', $searchChars)) {
+                    $search = explode('\'', $string)[1];
+                }
+
+                $replaceRange = new Range(
+                    PositionConverter::intByteOffsetToPosition($searchRangeStart, $textDocument->text),
+                    PositionConverter::intByteOffsetToPosition($searchRangeStart, $textDocument->text)
+                );
+
+                $file = str_replace('file://', '', $textDocument->uri);
+
+                $matchingComponent = null;
+
+                $components = $this->store->availableComponents;
+                // Find the component by its file.
+                /** @var \App\Dto\BladeComponentData $component */
+                foreach ($components as $component) {
+                    if ($component->livewire && $component->matchesView($file)) {
+                        $matchingComponent = $component;
+                        break;
+                    }
+                }
+
+                if ($matchingComponent) {
+                    $type = self::MATCH_WIRE;
+
+                    return new CompletionRequest(
+                        search: $search,
+                        element: null,
+                        type: self::MATCH_WIRE,
+                        replaceRange: $replaceRange,
+                        triggerChar: $triggerCharacter,
+                        store: $this->store,
+                        component: $matchingComponent
+                    );
+                }
+            }
+
             return null;
         }
 

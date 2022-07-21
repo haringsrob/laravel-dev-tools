@@ -29,11 +29,7 @@ class DataStore
     {
         $command = $this->getRunner() . ' run-command ' . getcwd() . " \"$commandString\"";
 
-        Logger::logdbg($command);
-
         $result = shell_exec($command);
-
-        Logger::logdbg($result);
 
         if ($refresh) {
             $this->refreshAvailableComponents(true);
@@ -111,7 +107,9 @@ class DataStore
                     doc: !empty($item['doc']) ? $item['doc'] : null,
                     views: $item['views'] ?? [],
                     type: $item['type'],
+                    livewire: $item['type'] === SnippetDto::TYPE_LIVEWIRE,
                     arguments: $item['arguments'],
+                    wireProps: $item['wireProps'] ?? [],
                     hasSlot: $item['hasSlot'] ?? false,
                 ));
             }

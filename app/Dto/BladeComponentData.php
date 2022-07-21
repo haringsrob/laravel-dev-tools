@@ -14,8 +14,20 @@ class BladeComponentData
         public string $type,
         public bool $livewire = false,
         public array $arguments = [],
+        public array $wireProps = [],
         public bool $hasSlot = false,
     ) {
+    }
+
+    // Check if the view file is from this component.
+    public function matchesView(string $viewFilePath): bool
+    {
+        foreach ($this->views as $file) {
+            if ($file === $viewFilePath) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function getHoverData(): string

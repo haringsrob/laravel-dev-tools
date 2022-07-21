@@ -9,7 +9,7 @@ class ReflectionMethod extends GlobalReflectionMethod
     public $body;
     public $filename;
 
-    public function __construct($objectOrMethod, $method = null, $filename)
+    public function __construct($objectOrMethod, $method = null, $filename = null)
     {
         parent::__construct($objectOrMethod, $method);
         $this->filename = $filename;

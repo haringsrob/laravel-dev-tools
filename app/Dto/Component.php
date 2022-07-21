@@ -3,10 +3,12 @@
 namespace App\Dto;
 
 use InvalidArgumentException;
+use ReflectionUnionType;
 
 class Component implements SnippetDto
 {
     public array $arguments = [];
+    public array $wireProps = [];
     public ?string $classDoc = null;
     public array $views = [];
 
@@ -20,6 +22,10 @@ class Component implements SnippetDto
         public bool $simpleView = false
     ) {
         $this->arguments = $this->getPossibleAttributes();
+        if ($livewire) {
+            // Must be after "getPossibleAttributes".
+            $this->wireProps = $this->getPossibleWireValues();
+        }
         $this->classDoc = $this->getClassDoc();
 
         $this->views = $this->matchViewsWithPath($views);
@@ -30,6 +36,9 @@ class Component implements SnippetDto
         }
     }
 
+    /**
+     * @return array<<missing>,string|bool>
+     */
     public function matchViewsWithPath(array $views): array
     {
         $result = [];
@@ -67,6 +76,9 @@ class Component implements SnippetDto
         return $class->getDocComment();
     }
 
+    /**
+     * @return array|array<<missing>,array{type:string,default:mixed,doc:string|false}>
+     */
     private function getPossibleAttributes(): array
     {
         if (!$this->class || !class_exists($this->class)) {
@@ -79,18 +91,30 @@ class Component implements SnippetDto
         /** @var \ReflectionProperty $attribute */
         foreach ($class->getProperties(\ReflectionProperty::IS_PUBLIC) as $attribute) {
             if (!in_array($attribute->getName(), $ignore)) {
-                $result[$attribute->getName()] = [
-                    'type' => $attribute->getType()?->getName(),
-                    'default' => $attribute->getDefaultValue(),
-                    'doc' => $attribute->getDocComment()
-                ];
+                if ($attribute->getType() instanceof ReflectionUnionType) {
+                    $types = [];
+                    foreach ($attribute->getType()->getTypes() as $type) {
+                        $types[] = $type->getName();
+                    }
+                    $result[$attribute->getName()] = [
+                        'type' => implode('|', $types),
+                        'default' => $attribute->getDefaultValue(),
+                        'doc' => $attribute->getDocComment()
+                    ];
+                } else {
+                    $result[$attribute->getName()] = [
+                        'type' => $attribute->getType()?->getName(),
+                        'default' => $attribute->getDefaultValue(),
+                        'doc' => $attribute->getDocComment()
+                    ];
+                }
             }
         }
 
         return $result;
     }
 
-    private function getType()
+    private function getType(): string
     {
         if ($this->livewire) {
             return self::TYPE_LIVEWIRE;
@@ -114,7 +138,42 @@ class Component implements SnippetDto
             'arguments' => $this->arguments,
             'views' => $this->views,
             'hasSlot' => $this->hasSlot(),
-            'type' => $this->getType()
+            'type' => $this->getType(),
+            'wireProps' => $this->wireProps,
         ];
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function getPossibleWireValues(): array
+    {
+        $ignore = ['id', 'redirectTo', 'paginators', 'page'];
+        $allowedTypes = ['null', 'string', 'int', 'Carbon\Carbon', 'bool', 'float'];
+        $result = [];
+
+        try {
+            $class = $this->class;
+            /** @var \Livewire\Component $component */
+            $component = new $class();
+            $component = invade($component);
+            $result = $component->getRules();
+        } catch (\Exception) {
+            /* // Alternative if previous does not work. */
+            /* $class = new \ReflectionClass($this->class); */
+            /* foreach ($class->getProperties() as $attribute) { */
+            /*     if ($attribute->name === 'rules') { */
+            /*         dd($class->getProperties()); */
+            /*     } */
+            /* } */
+        }
+
+        foreach ($this->arguments as $name => $argument) {
+            if (!in_array($name, $ignore)) {
+                $result[] = $name;
+            }
+        }
+
+        return $result;
     }
 }

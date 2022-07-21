@@ -57,6 +57,7 @@ function getLivewireComponents(): array
                     name: "livewire:$name",
                     file: getClassFile($class),
                     class: $class,
+                    views: extractViewNames($class),
                     livewire: true
                 );
             }
@@ -280,7 +281,7 @@ function extractViewNames(string $class): array
 
         if (strpos($method->body, 'view(') !== false) {
             $matches = [];
-            preg_match_all('/view\((?:\'|")([\w\-:.]*)(?:\'|")\)/', $method->body, $matches);
+            preg_match_all('/view\((?:\'|")([\w\-:.]*)(?:\'|")(,|\))/', $method->body, $matches);
             return $matches[1] ?? [];
         }
         return [];

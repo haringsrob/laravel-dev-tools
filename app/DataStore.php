@@ -14,6 +14,7 @@ class DataStore
 {
     public Collection $availableComponents;
     public Collection $availableDirectives;
+    public static $inprogress = false;
 
     public function __construct()
     {
@@ -69,17 +70,13 @@ class DataStore
 
     public function refreshAvailableComponents(bool $force = false): Collection
     {
-        if ($this->availableComponents->isEmpty() || $force) {
+        if (self::$inprogress === false && ($this->availableComponents->isEmpty() || $force)) {
+            self::$inprogress = true;
             $command = $this->getRunner() . ' snippets ' . getcwd();
 
-            Logger::logdbg($command);
-
-            $result = shell_exec($command);
-
-            Logger::logdbg($result);
-
-            if ($result) {
+            if ($result = shell_exec($command)) {
                 try {
+                    $time_start = microtime(true);
                     $decoded = json_decode($result, true, JSON_THROW_ON_ERROR);
                     if (!is_array($decoded)) {
                         return $this->availableComponents;
@@ -87,6 +84,8 @@ class DataStore
                     // @todo: Merge these as it is wasting computing power by looping twice.
                     $this->availableComponents = $this->getComponentsFromData($decoded);
                     $this->availableDirectives = $this->getDirectivesFromData($decoded);
+                    Logger::logdbg('Components ready.');
+                    self::$inprogress = false;
                 } catch (\Exception $e) {
                     Logger::logException($e);
                 }

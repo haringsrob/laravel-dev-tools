@@ -51,7 +51,6 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
         $this->logger = $logger;
         $this->store = $store;
         $this->resultFinder = new CompletionResultFinder($store);
-        $this->store->refreshAvailableComponents(true);
     }
 
     public function registerCapabiltiies(ServerCapabilities $capabilities): void

@@ -1,6 +1,6 @@
 # Laravel lsp
 
-The laravel lsp provides:
+The Laravel/Blade lsp provides:
 
 Blade:
 - [x] Diagnostics on missing components + action to create it.
@@ -10,14 +10,19 @@ Blade:
 
 Livewire:
 - [x] Autocomplete for livewire components and their arguments.
+- [x] Autocomplete for livewire wireable properties.
 - [x] Goto definition to the livewire class (not yet the view).
 - [x] Hover shows the path to the view.
-- [ ] Diagnostics on missing components + action to create it.
+- [x] Diagnostics on missing wire:model rules/parameters or missing wire:click methods.
+- [x] Diagnostics on missing components + action to create it.
 
 Other (plans):
 - [ ] Suggestions for config()
 - [ ] view() suggestions, and goto definition for view() calls.
 
+## Demo
+
+![Demo](./screenshots/demo-blade-lsp.gif)
 
 ## Status
 
@@ -26,9 +31,17 @@ issue/pull request with a *reproducable example*.
 
 Issues without clear steps to reproduce may be closed without answer.
 
+As it is experimental, there is no guarantee whatsoever that this will work. Please always ensure
+your code is under version control.
+
+Thing may be slow.
+
 ## Installation
 
 ### Requirements
+
+PHP 8.0, older versions will NOT work. (not even trying).
+LARAVEL 8.0, older versions will NOT work.
 
 This LSP is based on php in your runtime. I have not tested this with docker so for now assume it
 will not work from outside.
@@ -38,9 +51,13 @@ information it needs. (Much like running laravel-ide-helper).
 
 ### Vscode
 
-Download the extension from the vscode extensions.
+Install Name: [laravel-blade syntax](https://marketplace.visualstudio.com/items?itemName=cjhowe7.laravel-blade)
+
+Download [the extension](https://marketplace.visualstudio.com/items?itemName=haringsbe-haringsrob.vscode-laravel-dev-tools) from the vscode extensions.
 
 ### (Neo)vim
+
+Download the compiled version from the releases then use it to setup the lsp:
 
 This depends on your setup, below are instruction for using it with `nvim-lspconfig`
 
@@ -105,3 +122,7 @@ Other packages used are:
 - [Spatie invade](https://github.com/spatie/invade)
 - [Laravel](https://github.com/laravel/framework)
 - [SimpleLogger](https://github.com/wa72/simplelogger)
+
+## Todo's
+
+- [ ] Auto copy the readme/Licence to the extension folder when building.

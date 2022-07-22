@@ -7,12 +7,12 @@ use App\Logger;
 use App\Lsp\DiagnosticError;
 use Phpactor\LanguageServerProtocol\TextDocumentItem;
 
-class ComponentLspValidate extends BaseLspValidator
+class LivewireComponentLspValidate extends BaseLspValidator
 {
     private $patternSelfClosing = "/
             <
                 \s*
-                x[-\:]([\w\-\:\.]*)
+                livewire:([\w\-\:\.]*)
                 \s*
                 (?<attributes>
                     (?:
@@ -46,7 +46,7 @@ class ComponentLspValidate extends BaseLspValidator
     private $patternOpeningTag = "/
             <
                 \s*
-                x[-\:]([\w\-\:\.]*)
+                livewire:([\w\-\:\.]*)
                 (?<attributes>
                     (?:
                         \s+
@@ -76,20 +76,16 @@ class ComponentLspValidate extends BaseLspValidator
             >
         /x";
 
-    private $patternClosingTag = "/<\/\s*x[-\:][\w\-\:\.]*\s*>/";
+    private $patternClosingTag = "/<\/\s*livewire:[\w\-\:\.]*\s*>/";
 
     /**
      * @return DiagnosticError[]
      */
     public function getErrors(TextDocumentItem $document): array
     {
-        $availableComponents = ['x-slot'];
-        $this->store->availableComponents->each(
-            function (BladeComponentData $bladeComponentData) use (&$availableComponents) {
-                $availableComponents[] = $bladeComponentData->name;
-                $availableComponents[] = $bladeComponentData->altName;
-            }
-        );
+        $livewireComponents = $this->store->availableComponents->filter(function (BladeComponentData $component) {
+            return $component->livewire;
+        });
 
         $doc = $document->text;
 
@@ -101,15 +97,21 @@ class ComponentLspValidate extends BaseLspValidator
         preg_match_all($this->patternOpeningTag, $doc, $opening, PREG_OFFSET_CAPTURE);
         preg_match_all($this->patternClosingTag, $doc, $closing, PREG_OFFSET_CAPTURE);
 
+        $componentNames = $livewireComponents->map(function (BladeComponentData $data) {
+            return $data->name;
+        })->toArray();
+
         $errors = [];
+
         foreach ($selfClosing[1] as $item) {
-            if (!in_array('x-' . $item[0], $availableComponents)) {
+            if (!in_array('livewire:' . $item[0], $componentNames)) {
                 $errors[] = new DiagnosticError(
-                    error: 'Component not found: ' . $item[0],
+                    error: 'Livewire Component not found: ' . $item[0],
                     type: DiagnosticError::TYPE_NOT_EXISTING,
                     componentName: $item[0],
                     startPos: $item[1],
                     endPos: $item[1] + strlen($item[0]),
+                    isLivewire: true,
                     provideAction: true,
                 );
             }
@@ -136,7 +138,8 @@ class ComponentLspValidate extends BaseLspValidator
             $isClosed = false;
 
             foreach ($closingTags as $key => $closingTag) {
-                if ($closingTag[0] === $item[0]) {
+                // Must be prefixed with livewire here.
+                if ($closingTag[0] === 'livewire:' . $item[0]) {
                     $isClosed = true;
                     unset($closingTags[$key]);
                     break;
@@ -145,19 +148,20 @@ class ComponentLspValidate extends BaseLspValidator
 
             if (!$isClosed) {
                 $errors[] = new DiagnosticError(
-                    error: 'Component not closed: ' . $item[0],
+                    error: 'Livewire component not closed: ' . $item[0],
                     type: DiagnosticError::TYPE_UNCLOSED,
                     startPos: $item[1],
                     endPos: $item[1] + strlen($item[0])
                 );
             }
 
-            if (!in_array('x-' . $item[0], $availableComponents)) {
+            if (!in_array('livewire:' . $item[0], $componentNames)) {
                 $errors[] = new DiagnosticError(
-                    error: 'Component not found: ' . $item[0],
+                    error: 'Livewire component not found: ' . $item[0],
                     type: DiagnosticError::TYPE_NOT_EXISTING,
                     componentName: $item[0],
                     startPos: $item[1],
+                    isLivewire: true,
                     endPos: $item[1] + strlen($item[0]),
                     provideAction: true
                 );
@@ -166,7 +170,7 @@ class ComponentLspValidate extends BaseLspValidator
 
         foreach ($closingTags as $closingTag) {
             $errors[] = new DiagnosticError(
-                error: 'Component opening not found: ' . $closingTag[0],
+                error: 'Livewire component opening not found: ' . $closingTag[0],
                 type: DiagnosticError::TYPE_UNOPENED,
                 startPos: $closingTag[1],
                 endPos: $closingTag[1] + strlen($closingTag[0])

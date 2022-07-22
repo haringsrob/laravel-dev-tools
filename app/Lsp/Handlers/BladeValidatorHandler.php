@@ -5,6 +5,7 @@ namespace App\Lsp\Handlers;
 use Amp\Promise;
 use App\DataStore;
 use App\Lsp\LspValidators\ComponentLspValidate;
+use App\Lsp\LspValidators\LivewireComponentLspValidate;
 use App\Lsp\LspValidators\LivewireLspValidate;
 use Illuminate\Support\Collection;
 use Phpactor\LanguageServer\Core\Diagnostics\DiagnosticsProvider;
@@ -20,6 +21,7 @@ class BladeValidatorHandler implements DiagnosticsProvider
     {
         $this->validators[] = new LivewireLspValidate($store);
         $this->validators[] = new ComponentLspValidate($store);
+        $this->validators[] = new LivewireComponentLspValidate($store);
     }
 
     public function provideDiagnostics(TextDocumentItem $textDocument): Promise

@@ -7,13 +7,14 @@ Blade:
 - [x] Autocomplete for components and their arguments.
 - [x] Hover shows the path to the view.
 - [x] Goto definition on components to jump to the view or component class.
-- [x] Blade directive autocomplete for non default directives. (For default directives there are many snippet extensions available)
 
 Livewire:
 - [x] Autocomplete for livewire components and their arguments.
+- [x] Autocomplete for livewire wireable properties.
 - [x] Goto definition to the livewire class (not yet the view).
 - [x] Hover shows the path to the view.
-- [ ] Diagnostics on missing components + action to create it.
+- [x] Diagnostics on missing wire:model rules/parameters or missing wire:click methods.
+- [x] Diagnostics on missing components + action to create it.
 
 Other (plans):
 - [ ] Suggestions for config()

@@ -6,8 +6,6 @@ import {
 
 import * as vscode from "vscode";
 
-const LanguageID = 'blade';
-
 let languageClient: LanguageClient;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -34,8 +32,10 @@ function createClient(cmd: any): LanguageClient {
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            { language: LanguageID, scheme: 'file' },
-            { language: LanguageID, scheme: 'untitled' }
+            { language: 'blade', scheme: 'file' },
+            { language: 'blade', scheme: 'untitled' },
+            { language: 'php', scheme: 'file' },
+            { language: 'php', scheme: 'untitled' }
         ],
         initializationOptions: {}
     };

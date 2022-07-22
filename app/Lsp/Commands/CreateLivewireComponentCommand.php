@@ -12,7 +12,7 @@ use Phpactor\LanguageServerProtocol\TextDocumentItem;
 use Phpactor\LanguageServer\Core\Diagnostics\DiagnosticsEngine;
 use Phpactor\LanguageServer\Core\Server\ClientApi;
 
-class CreateComponentCommand implements Command
+class CreateLivewireComponentCommand implements Command
 {
     public function __construct(
         public DataStore $dataStore,
@@ -23,9 +23,9 @@ class CreateComponentCommand implements Command
 
     public function __invoke(string $name, array $textDocument): Promise
     {
-        Logger::logdbg('Creating component command: ' . $name);
+        Logger::logdbg('Creating livewire command: ' . $name);
         $name = Str::studly($name);
-        $result = $this->dataStore->executeCommandAndRefresh("make:component $name");
+        $result = $this->dataStore->executeCommandAndRefresh("make:livewire $name");
         if (empty($result)) {
             $result = 'Successfully created new component';
         }

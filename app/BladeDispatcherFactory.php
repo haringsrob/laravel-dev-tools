@@ -4,8 +4,10 @@ namespace App;
 
 use App\Lsp\CodeActionProvider;
 use App\Lsp\Commands\CreateComponentCommand;
+use App\Lsp\Commands\CreateLivewireComponentCommand;
 use App\Lsp\Handlers\BladeComponentHandler;
 use App\Lsp\Handlers\BladeValidatorHandler;
+use App\Lsp\Handlers\RefreshOnFileChangeHandle;
 use Phpactor\LanguageServer\Adapter\Psr\AggregateEventDispatcher;
 use Phpactor\LanguageServer\Core\CodeAction\AggregateCodeActionProvider;
 use Phpactor\LanguageServer\Core\Command\CommandDispatcher;
@@ -62,20 +64,33 @@ class BladeDispatcherFactory implements DispatcherFactory
         $clientApi = new ClientApi(new JsonRpcClient($transmitter, $responseWatcher));
 
         $store = new DataStore();
+        $store->refreshAvailableComponents();
+
+        $workspace = new Workspace($this->logger);
 
         $diagnosticsService = new DiagnosticsService(
-            $diagnosticsEngine = new DiagnosticsEngine($clientApi, new BladeValidatorHandler($store))
+            $diagnosticsEngine = new DiagnosticsEngine($clientApi, new BladeValidatorHandler($store)),
+            lintOnUpdate: true,
+            lintOnSave: true,
+            workspace: $workspace
         );
 
         $serviceProviders = new ServiceProviders($diagnosticsService);
-
-        $workspace = new Workspace();
 
         $serviceManager = new ServiceManager($serviceProviders, $this->logger);
 
         $commandHandler = new CommandHandler(
             new CommandDispatcher([
-                'create_component' => new CreateComponentCommand($clientApi, $store, $diagnosticsEngine)
+                'create_component' => new CreateComponentCommand(
+                    dataStore: $store,
+                    diagnosticsEngine: $diagnosticsEngine,
+                    api: $clientApi
+                ),
+                'create_livewire_component' => new CreateLivewireComponentCommand(
+                    dataStore: $store,
+                    diagnosticsEngine: $diagnosticsEngine,
+                    api: $clientApi
+                )
             ])
         );
 
@@ -89,7 +104,11 @@ class BladeDispatcherFactory implements DispatcherFactory
         $eventDispatcher = new AggregateEventDispatcher(
             new ServiceListener($serviceManager),
             new WorkspaceListener($workspace),
-            new DidChangeWatchedFilesListener($clientApi, ['**/*.blade.php'], $initializeParams->capabilities),
+            new DidChangeWatchedFilesListener(
+                $clientApi,
+                ['resources/views/**/*.blade.php', 'app/Http/Livewire/**/*.php', 'app/View/**/*.php'],
+                $initializeParams->capabilities
+            ),
             $diagnosticsService,
         );
 
@@ -98,6 +117,7 @@ class BladeDispatcherFactory implements DispatcherFactory
             new ServiceHandler($serviceManager, $clientApi),
             new DidChangeWatchedFilesHandler($eventDispatcher),
             new BladeComponentHandler($this->logger, $workspace, $store),
+            new RefreshOnFileChangeHandle($store),
             $commandHandler,
             $codeActionHandler,
             new ExitHandler()

@@ -1,10 +1,12 @@
 <?php
 
-namespace App\Lsp\Traits;
+namespace App\Lsp\LspValidators;
 
+use App\Dto\BladeComponentData;
 use App\Lsp\DiagnosticError;
+use Phpactor\LanguageServerProtocol\TextDocumentItem;
 
-trait GetsDocumentErrors
+class ComponentLspValidate extends BaseLspValidator
 {
     private $patternSelfClosing = "/
             <
@@ -78,8 +80,18 @@ trait GetsDocumentErrors
     /**
      * @return DiagnosticError[]
      */
-    protected function getErrors(string $doc, array $availableComponents): array
+    public function getErrors(TextDocumentItem $document): array
     {
+        $availableComponents = ['x-slot'];
+        $this->store->availableComponents->each(
+            function (BladeComponentData $bladeComponentData) use (&$availableComponents) {
+                $availableComponents[] = $bladeComponentData->name;
+                $availableComponents[] = $bladeComponentData->altName;
+            }
+        );
+
+        $doc = $document->text;
+
         $selfClosing = [];
         $opening = [];
         $closing = [];
@@ -108,7 +120,7 @@ trait GetsDocumentErrors
             $cleaned = rtrim(ltrim($item[0], '</x-'), '>');
             $closingTags[] = [$cleaned, $item[1]];
             continue;
-            if (!in_array('x-' . $cleaned, $availableComponents)) {
+            /* if (!in_array('x-' . $cleaned, $availableComponents)) { */
                 // For now we do not provide this as it may be annoying?
                 /* $errors[] = new DiagnosticError( */
                 /*     error: 'Component not found: ' . $cleaned, */
@@ -116,7 +128,7 @@ trait GetsDocumentErrors
                 /*     startPos: $item[1], */
                 /*     endPos: $item[1] + strlen($item[0]) */
                 /* ); */
-            }
+            /* } */
         }
 
         foreach ($opening[1] as $item) {

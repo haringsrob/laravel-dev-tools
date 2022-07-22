@@ -6,7 +6,6 @@ use Amp\CancellationToken;
 use Amp\Promise;
 use Amp\Success;
 use App\DataStore;
-use App\Dto\BladeComponentData;
 use App\Dto\BladeDirectiveData;
 use App\Dto\Element;
 use App\Logger;
@@ -371,21 +370,7 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
                     PositionConverter::intByteOffsetToPosition($searchRangeStart, $textDocument->text)
                 );
 
-                $file = str_replace('file://', '', $textDocument->uri);
-
-                $matchingComponent = null;
-
-                $components = $this->store->availableComponents;
-                // Find the component by its file.
-                /** @var \App\Dto\BladeComponentData $component */
-                foreach ($components as $component) {
-                    if ($component->livewire && $component->matchesView($file)) {
-                        $matchingComponent = $component;
-                        break;
-                    }
-                }
-
-                if ($matchingComponent) {
+                if ($matchingComponent = $this->store->findComponentForFile($textDocument)) {
                     $type = self::MATCH_WIRE;
 
                     return new CompletionRequest(

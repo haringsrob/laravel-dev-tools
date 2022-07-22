@@ -4,8 +4,9 @@ namespace App\Lsp\Handlers;
 
 use Amp\Promise;
 use App\DataStore;
-use App\Dto\BladeComponentData;
-use App\Lsp\Traits\GetsDocumentErrors;
+use App\Lsp\LspValidators\ComponentLspValidate;
+use App\Lsp\LspValidators\LivewireLspValidate;
+use Illuminate\Support\Collection;
 use Phpactor\LanguageServer\Core\Diagnostics\DiagnosticsProvider;
 use Phpactor\LanguageServerProtocol\TextDocumentItem;
 
@@ -13,24 +14,22 @@ use function Amp\call;
 
 class BladeValidatorHandler implements DiagnosticsProvider
 {
-    use GetsDocumentErrors;
+    public array $validators;
 
     public function __construct(public DataStore $store)
     {
+        $this->validators[] = new LivewireLspValidate($store);
+        $this->validators[] = new ComponentLspValidate($store);
     }
 
     public function provideDiagnostics(TextDocumentItem $textDocument): Promise
     {
         return call(function () use ($textDocument) {
-            $componentsSimple = ['x-slot'];
-            $this->store->availableComponents->each(
-                function (BladeComponentData $bladeComponentData) use (&$componentsSimple) {
-                    $componentsSimple[] = $bladeComponentData->name;
-                    $componentsSimple[] = $bladeComponentData->altName;
-                }
-            );
+            $errors = Collection::make();
 
-            $errors = $this->getErrors($textDocument->text, $componentsSimple);
+            foreach ($this->validators as $validator) {
+                $errors = $errors->concat($validator->getErrors($textDocument));
+            }
 
             $diagnostics = [];
 

@@ -9,6 +9,7 @@ class Component implements SnippetDto
 {
     public array $arguments = [];
     public array $wireProps = [];
+    public array $wireMethods = [];
     public ?string $classDoc = null;
     public array $views = [];
 
@@ -25,6 +26,7 @@ class Component implements SnippetDto
         if ($livewire) {
             // Must be after "getPossibleAttributes".
             $this->wireProps = $this->getPossibleWireValues();
+            $this->wireMethods = $this->getPossibleWireMethods();
         }
         $this->classDoc = $this->getClassDoc();
 
@@ -37,7 +39,7 @@ class Component implements SnippetDto
     }
 
     /**
-     * @return array<<missing>,string|bool>
+     * @return array<string,string|bool>
      */
     public function matchViewsWithPath(array $views): array
     {
@@ -140,7 +142,39 @@ class Component implements SnippetDto
             'hasSlot' => $this->hasSlot(),
             'type' => $this->getType(),
             'wireProps' => $this->wireProps,
+            'wireMethods' => $this->wireMethods,
         ];
+    }
+
+    private function getPossibleWireMethods(): array
+    {
+        $class = new \ReflectionClass($this->class);
+        $result = [];
+        $ignore = ['mount', 'render', 'bootIfNotBooted'];
+        /** @var \ReflectionProperty $attribute */
+        foreach ($class->getMethods(\ReflectionProperty::IS_PUBLIC) as $attribute) {
+            // Filter stuff coming from the base component.
+            if ($attribute->class === 'Livewire\Component') {
+                continue;
+            }
+            if (str_contains($attribute->getFileName(), 'livewire/livewire/src')) {
+                continue;
+            }
+            // Filter stuff from a trait.
+            if (
+                str_starts_with($attribute->name, 'boot') ||
+                str_starts_with($attribute->name, '__') ||
+                (str_starts_with($attribute->name, 'get') && str_ends_with($attribute->name, 'Property'))
+            ) {
+                continue;
+            }
+
+            if (!in_array($attribute->getName(), $ignore)) {
+                $result[$attribute->getName()] = $attribute->getReturnType()?->getName();
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -170,7 +204,7 @@ class Component implements SnippetDto
 
         foreach ($this->arguments as $name => $argument) {
             if (!in_array($name, $ignore)) {
-                $result[] = $name;
+                $result[$name] = $argument['type'];
             }
         }
 

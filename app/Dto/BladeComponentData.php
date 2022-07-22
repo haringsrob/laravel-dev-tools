@@ -15,6 +15,7 @@ class BladeComponentData
         public bool $livewire = false,
         public array $arguments = [],
         public array $wireProps = [],
+        public array $wireMethods = [],
         public bool $hasSlot = false,
     ) {
     }

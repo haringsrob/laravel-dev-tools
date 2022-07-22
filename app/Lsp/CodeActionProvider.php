@@ -5,7 +5,7 @@ namespace App\Lsp;
 use Amp\Promise;
 use App\DataStore;
 use App\Dto\BladeComponentData;
-use App\Lsp\Traits\GetsDocumentErrors;
+use App\Lsp\LspValidators\ComponentLspValidate;
 use Phpactor\LanguageServer\Core\CodeAction\CodeActionProvider as CodeActionCodeActionProvider;
 use Phpactor\LanguageServerProtocol\CodeAction;
 use Phpactor\LanguageServerProtocol\Command;
@@ -16,22 +16,17 @@ use function Amp\call;
 
 class CodeActionProvider implements CodeActionCodeActionProvider
 {
-    use GetsDocumentErrors;
+    public ComponentLspValidate $validator;
 
     public function __construct(public DataStore $store)
     {
+        $this->validator = new ComponentLspValidate($store);
     }
 
     public function provideActionsFor(TextDocumentItem $textDocument, Range $range): Promise
     {
         return call(function () use ($textDocument) {
-            $componentsSimple = ['x-slot'];
-            $this->store->availableComponents->each(function (BladeComponentData $bladeComponentData) use (&$componentsSimple) {
-                $componentsSimple[] = $bladeComponentData->name;
-                $componentsSimple[] = $bladeComponentData->altName;
-            });
-
-            $errors = $this->getErrors($textDocument->text, $componentsSimple);
+            $errors = $this->validator->getErrors($textDocument);
 
             $actions = [];
 

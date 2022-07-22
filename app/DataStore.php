@@ -8,6 +8,7 @@ use App\Dto\BladeDirectiveData;
 use App\Util\Path;
 use Illuminate\Support\Collection;
 use Phar;
+use Phpactor\LanguageServerProtocol\TextDocumentItem;
 
 class DataStore
 {
@@ -46,6 +47,24 @@ class DataStore
         }
 
         return $commandBase;
+    }
+
+    /**
+     * The current file, only supports views files (for now).
+     */
+    public function findComponentForFile(TextDocumentItem $file): ?BladeComponentData
+    {
+        $file = str_replace('file://', '', $file->uri);
+
+        $matchingComponent = null;
+
+        foreach ($this->availableComponents as $component) {
+            if ($component->matchesView($file)) {
+                $matchingComponent = $component;
+                break;
+            }
+        }
+        return $matchingComponent;
     }
 
     public function refreshAvailableComponents(bool $force = false): Collection
@@ -110,6 +129,7 @@ class DataStore
                     livewire: $item['type'] === SnippetDto::TYPE_LIVEWIRE,
                     arguments: $item['arguments'],
                     wireProps: $item['wireProps'] ?? [],
+                    wireMethods: $item['wireMethods'] ?? [],
                     hasSlot: $item['hasSlot'] ?? false,
                 ));
             }

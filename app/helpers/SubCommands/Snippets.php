@@ -5,6 +5,7 @@ use App\Dto\Directive;
 use App\Reflection\ReflectionClass;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\Support\Facades\File;
+use function Safe\file_get_contents;
 
 include_once(__DIR__ . '/../../Dto/Snippet.php');
 include_once(__DIR__ . '/../../Dto/SnippetDto.php');
@@ -152,7 +153,6 @@ function getBladeComponents(): array
         }
 
         $reflection = new ReflectionClass($serviceProvider);
-        $reflection->getFileName();
 
         $explodedPath = explode(DIRECTORY_SEPARATOR, $reflection->getFileName());
         array_pop($explodedPath);
@@ -214,7 +214,7 @@ function getBladeComponents(): array
     }
 
     // Aliased.
-    $aliased = getBlade()->getClassComponentAliases();
+    $aliased = $blade->getClassComponentAliases();
     foreach ($aliased as $name => $fileOrClass) {
         if (strpos($fileOrClass, '\\') !== false) {
             $data[] = new Component(
@@ -277,14 +277,9 @@ function extractViewNames(string $class): array
 {
     $class = new \App\Reflection\ReflectionClass($class);
     try {
-        $method = $class->getMethod('render');
-
-        if (strpos($method->body, 'view(') !== false) {
-            $matches = [];
-            preg_match_all('/view\((?:\'|")([\w\-:.]*)(?:\'|")(,|\))/', $method->body, $matches);
-            return $matches[1] ?? [];
-        }
-        return [];
+        $matches = [];
+        preg_match_all('/view\((?:\'|")([\w\-:.]*)(?:\'|")(,|\))/', file_get_contents($class->getFileName()), $matches);
+        return $matches[1] ?? [];
     } catch (ReflectionException) {
         return [];
     }

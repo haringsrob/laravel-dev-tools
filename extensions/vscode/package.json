@@ -1,9 +1,11 @@
 {
-    "name": "Laravel blade/livewire language server",
-    "version": "1.2.0",
-    "description": "Laravel blade and livewire language server",
+    "name": "laravel-blade-livewire-lsp",
+    "displayName": "Laravel Blade + Laravel Livewire language server",
+    "version": "1.2.1",
+    "description": "Laravel blade and livewire language server adds autocomplete, diagnostics and code actions to Blade and livewire files.",
     "main": "lib/extension.js",
     "publisher": "haringsbe-haringsrob",
+    "icon": "icon.png",
     "engines": {
         "vscode": "^1.43.0"
     },
@@ -42,8 +44,9 @@
         "webpack-cli": "^3.3.4"
     },
     "dependencies": {
-        "vscode-languageclient": "^6.1.3",
-        "tslib": "^2.3.1"
+        "ci": "^2.2.0",
+        "tslib": "^2.3.1",
+        "vscode-languageclient": "^6.1.3"
     },
     "repository": {
         "type": "git",

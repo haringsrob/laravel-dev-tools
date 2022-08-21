@@ -9,10 +9,10 @@ class Logger
 {
     public static function getLogger(): LoggerInterface
     {
-        /* return new NullLogger(); */
+        return new NullLogger();
         // The below is usefull for development.
         // @todo: Use this via a switch?
-        return new \Wa72\SimpleLogger\FileLogger('/Users/rob/Sites/laravel-dev-generators/log.txt');
+        //return new \Wa72\SimpleLogger\FileLogger('/Users/rob/Sites/laravel-dev-generators/log.txt');
     }
 
     public static function logException(\Exception $e): void

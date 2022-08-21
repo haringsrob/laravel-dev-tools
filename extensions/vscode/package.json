@@ -1,6 +1,6 @@
 {
     "name": "Laravel blade/livewire language server",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Laravel blade and livewire language server",
     "main": "lib/extension.js",
     "publisher": "haringsbe-haringsrob",

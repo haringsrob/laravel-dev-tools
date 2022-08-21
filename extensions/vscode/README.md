@@ -53,7 +53,7 @@ information it needs. (Much like running laravel-ide-helper).
 
 Install Name: [laravel-blade syntax](https://marketplace.visualstudio.com/items?itemName=cjhowe7.laravel-blade)
 
-Download [the extension](https://marketplace.visualstudio.com/items?itemName=haringsbe-haringsrob.vscode-laravel-dev-tools) from the vscode extensions.
+Download [the extension](https://marketplace.visualstudio.com/items?itemName=haringsbe-haringsrob.laravel-blade-livewire-lsp) from the vscode extensions.
 
 ### (Neo)vim
 

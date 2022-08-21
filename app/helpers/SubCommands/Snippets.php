@@ -46,7 +46,11 @@ function getLivewireComponents(): array
 {
     $data = [];
     if (class_exists(\Livewire\LivewireComponentsFinder::class)) {
-        $livewire = app('livewire');
+        try {
+            $livewire = app('livewire');
+        } catch (Exception) {
+            return [];
+        }
 
         // Todo
         $livewireAliased = $livewire->getComponentAliases();
@@ -90,7 +94,7 @@ function getDirectives(): array
         $directiveObj = new Directive();
         $directiveObj->name = $name;
 
-        if ($r && $r->getClosureScopeClass()) {
+        if ($r ?? false && $r->getClosureScopeClass()) {
             $directiveObj->class = $r->getClosureScopeClass()->name;
             $directiveObj->file = $r->getClosureScopeClass()->getFileName();
             $directiveObj->line = $r->getStartLine();
@@ -275,6 +279,9 @@ function getViewsFiles(): array
  */
 function extractViewNames(string $class): array
 {
+    if (!class_exists($class)) {
+        return [];
+    }
     $class = new \App\Reflection\ReflectionClass($class);
     try {
         $matches = [];

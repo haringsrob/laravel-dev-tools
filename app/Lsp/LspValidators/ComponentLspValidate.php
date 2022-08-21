@@ -3,7 +3,6 @@
 namespace App\Lsp\LspValidators;
 
 use App\Dto\BladeComponentData;
-use App\Logger;
 use App\Lsp\DiagnosticError;
 use Phpactor\LanguageServerProtocol\TextDocumentItem;
 
@@ -153,14 +152,17 @@ class ComponentLspValidate extends BaseLspValidator
             }
 
             if (!in_array('x-' . $item[0], $availableComponents)) {
-                $errors[] = new DiagnosticError(
-                    error: 'Component not found: ' . $item[0],
-                    type: DiagnosticError::TYPE_NOT_EXISTING,
-                    componentName: $item[0],
-                    startPos: $item[1],
-                    endPos: $item[1] + strlen($item[0]),
-                    provideAction: true
-                );
+                // Check that it is not a slot.
+                if (!str_starts_with($item[0], 'slot')) {
+                    $errors[] = new DiagnosticError(
+                        error: 'Component not found: ' . $item[0],
+                        type: DiagnosticError::TYPE_NOT_EXISTING,
+                        componentName: $item[0],
+                        startPos: $item[1],
+                        endPos: $item[1] + strlen($item[0]),
+                        provideAction: true
+                    );
+                }
             }
         }
 

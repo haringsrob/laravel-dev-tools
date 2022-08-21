@@ -148,6 +148,9 @@ class Component implements SnippetDto
 
     private function getPossibleWireMethods(): array
     {
+        if (!class_exists($this->class)) {
+            return [];
+        }
         $class = new \ReflectionClass($this->class);
         $result = [];
         $ignore = ['mount', 'render', 'bootIfNotBooted'];
@@ -188,6 +191,9 @@ class Component implements SnippetDto
 
         try {
             $class = $this->class;
+            if (!class_exists($this->class)) {
+                return [];
+            }
             /** @var \Livewire\Component $component */
             $component = new $class();
             $component = invade($component);

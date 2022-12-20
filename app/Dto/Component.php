@@ -3,6 +3,8 @@
 namespace App\Dto;
 
 use InvalidArgumentException;
+use ReflectionNamedType;
+use ReflectionUnionType;
 
 class Component implements SnippetDto
 {
@@ -79,8 +81,23 @@ class Component implements SnippetDto
         /** @var \ReflectionProperty $attribute */
         foreach ($class->getProperties(\ReflectionProperty::IS_PUBLIC) as $attribute) {
             if (!in_array($attribute->getName(), $ignore)) {
+                $name = function(ReflectionNamedType|ReflectionUnionType|null $type) {
+                    if ($type instanceof ReflectionNamedType) {
+                        return $type->getName();
+                    }
+                    if ($type instanceof ReflectionUnionType) {
+                        $namesOnly = [];
+                        foreach ($type->getTypes() as $type) {
+                            $namesOnly[] = $type->getName();
+                        }
+
+                        return implode(',', $namesOnly);
+                    }
+
+                    return 'UNDEFINED';
+                };
                 $result[$attribute->getName()] = [
-                    'type' => $attribute->getType()?->getName(),
+                    'type' => $name($attribute->getType()),
                     'default' => $attribute->getDefaultValue(),
                     'doc' => $attribute->getDocComment()
                 ];
@@ -90,7 +107,7 @@ class Component implements SnippetDto
         return $result;
     }
 
-    private function getType()
+    private function getType(): string
     {
         if ($this->livewire) {
             return self::TYPE_LIVEWIRE;

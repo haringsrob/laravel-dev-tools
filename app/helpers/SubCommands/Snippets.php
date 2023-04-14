@@ -94,7 +94,7 @@ function getDirectives(): array
         $directiveObj = new Directive();
         $directiveObj->name = $name;
 
-        if ($r ?? false && $r->getClosureScopeClass()) {
+        if (isset($r) ?? false && $r->getClosureScopeClass()) {
             $directiveObj->class = $r->getClosureScopeClass()->name;
             $directiveObj->file = $r->getClosureScopeClass()->getFileName();
             $directiveObj->line = $r->getStartLine();

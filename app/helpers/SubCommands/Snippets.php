@@ -109,7 +109,12 @@ function getDirectives(): array
     foreach (array_keys($directives) as $name) {
         if (strpos($name, 'end') === 0) {
             $name = ltrim($name, 'end');
-            $directivesList[$name]->hasEnd = true;
+            if (isset($directivesList[$name])) {
+                $directivesList[$name]->hasEnd = true;
+            }
+            if (isset($directivesList[lcfirst($name)])) {
+                $directivesList[lcfirst($name)]->hasEnd = true;
+            }
         }
     }
 

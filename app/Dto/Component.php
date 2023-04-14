@@ -79,6 +79,23 @@ class Component implements SnippetDto
         return $class->getDocComment();
     }
 
+    private function getNameFromReflectionType(ReflectionNamedType|ReflectionUnionType|null $type): string
+    {
+        if ($type instanceof ReflectionNamedType) {
+            return $type->getName();
+        }
+        if ($type instanceof ReflectionUnionType) {
+            $namesOnly = [];
+            foreach ($type->getTypes() as $type) {
+                $namesOnly[] = $type->getName();
+            }
+
+            return implode(',', $namesOnly);
+        }
+
+        return 'UNDEFINED';
+    }
+
     /**
      * @return array|array<<missing>,array{type:string,default:mixed,doc:string|false}>
      */
@@ -91,22 +108,6 @@ class Component implements SnippetDto
         $class = new \ReflectionClass($this->class);
         $result = [];
         $ignore = ['componentName', 'attributes'];
-
-        $name = function (ReflectionNamedType|ReflectionUnionType|null $type) {
-            if ($type instanceof ReflectionNamedType) {
-                return $type->getName();
-            }
-            if ($type instanceof ReflectionUnionType) {
-                $namesOnly = [];
-                foreach ($type->getTypes() as $type) {
-                    $namesOnly[] = $type->getName();
-                }
-
-                return implode(',', $namesOnly);
-            }
-
-            return 'UNDEFINED';
-        };
 
         /** @var \ReflectionProperty $attribute */
         foreach ($class->getProperties(\ReflectionProperty::IS_PUBLIC) as $attribute) {
@@ -123,7 +124,7 @@ class Component implements SnippetDto
                     ];
                 } else {
                     $result[$attribute->getName()] = [
-                        'type' => $name($attribute->getType()),
+                        'type' => $this->getNameFromReflectionType($attribute->getType()),
                         'default' => $attribute->getDefaultValue(),
                         'doc' => $attribute->getDocComment()
                     ];
@@ -191,7 +192,7 @@ class Component implements SnippetDto
             }
 
             if (!in_array($attribute->getName(), $ignore)) {
-                $result[$attribute->getName()] = $attribute->getReturnType()?->getName();
+                $result[$attribute->getName()] = $this->getNameFromReflectionType($attribute->getReturnType());
             }
         }
 

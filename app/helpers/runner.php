@@ -29,4 +29,8 @@ if ($argv[2] === 'command') {
     include_once $baseDir . '/app/helpers/SubCommands/Config.php';
 } elseif ($argv[2] === 'snippets') {
     include_once $baseDir . '/app/helpers/SubCommands/Snippets.php';
+} elseif ($argv[2] === 'container') {
+    include_once $baseDir . '/app/helpers/SubCommands/Container.php';
+} elseif ($argv[2] === 'helpers') {
+    include_once $baseDir . '/app/helpers/SubCommands/Helpers.php';
 }

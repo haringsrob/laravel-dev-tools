@@ -1,7 +1,5 @@
 <?php
 
-use Barryvdh\LaravelIdeHelper\ClassMapGenerator;
-use Barryvdh\LaravelIdeHelper\Console\ModelsCommand;
 use Illuminate\Support\Facades\Artisan;
 
 /**
@@ -24,38 +22,16 @@ function handle()
         mkdir($targetDir);
     }
 
-    // @todo: Make dynamic.
-    // When multiple directories are loaded, manually autoload them.
-    $dirs = glob('twill/examples/**/app/Models', GLOB_ONLYDIR);
-    foreach ($dirs as $dir) {
-        if (file_exists($dir)) {
-            $classMap = ClassMapGenerator::createMap($dir);
-
-            // Sort list so it's stable across different environments
-            ksort($classMap);
-
-            foreach ($classMap as $model => $path) {
-                if (!class_exists($model)) {
-                    require_once $path;
-                }
-            }
-        }
-    }
-
     Artisan::call('ide-helper:models',
         [
             '--nowrite' => true,
-            '--filename' =>  $targetDir . DIRECTORY_SEPARATOR . 'models.php',
-            '--dir' => [
-                'app/Models',
-                // @todo: Autoload the contents.
-                'twill/examples/**/app/Models',
-            ],
+            '--filename' =>  $targetDir . DIRECTORY_SEPARATOR . 'models.php'
         ]
     );
     Artisan::call('ide-helper:generate',
         [
-            'filename' =>  $targetDir . DIRECTORY_SEPARATOR . 'facades.php'
+            'filename' =>  $targetDir . DIRECTORY_SEPARATOR . 'facades.php',
+            '--helpers' => true,
         ]
     );
 }

@@ -41,6 +41,9 @@ function handle()
             '--helpers' => true,
         ]
     );
+    Artisan::call(
+        'ide-helper:eloquent'
+    );
 }
 
 handle();

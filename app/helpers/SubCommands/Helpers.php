@@ -24,16 +24,6 @@ function handle()
     }
 
     Artisan::call(
-        'ide-helper:models',
-        [
-            '--nowrite' => true,
-            '--filename' =>  $targetDir . DIRECTORY_SEPARATOR . 'models.php',
-            '--dir' => [
-                'app/Models',
-            ],
-        ]
-    );
-    Artisan::call(
         'ide-helper:generate',
         [
             'filename' =>  $targetDir . DIRECTORY_SEPARATOR . 'facades.php',

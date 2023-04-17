@@ -25,8 +25,7 @@
         "phpactor/language-server": "^1.1",
         "phpactor/text-document": "^1.2",
         "spatie/invade": "^1.0",
-        "spatie/laravel-model-info": "^1.4",
-        "wa72/simplelogger": "^1.1"
+        "spatie/laravel-model-info": "^1.4"
     },
     "require-dev": {
         "mockery/mockery": "^1.4.4",

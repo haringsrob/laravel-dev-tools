@@ -4,7 +4,7 @@
     "keywords":  ["Laravel", "blade", "lsp", "Language server", "console", "cli"],
     "homepage": "https://github.com/haringsrob/laravel-dev-tools",
     "type": "project",
-    "license": "APACHE 2.0",
+    "license": "Apache-2.0",
     "support": {
         "issues": "https://github.com/haringsrob/laravel-dev-tools/issues",
         "source": "https://github.com/haringsrob/laravel-dev-tools"

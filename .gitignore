@@ -8,3 +8,4 @@ builds
 extensions/vscode/laravel-dev-generators
 extensions/vscode/laravel-dev-tools
 extensions/vscode/out/main.js
+storage

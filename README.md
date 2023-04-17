@@ -122,6 +122,7 @@ Other packages used are:
 - [Spatie invade](https://github.com/spatie/invade)
 - [Laravel](https://github.com/laravel/framework)
 - [SimpleLogger](https://github.com/wa72/simplelogger)
+- [Laravel model info](https://github.com/spatie/laravel-model-info)
 
 ## Todo's
 

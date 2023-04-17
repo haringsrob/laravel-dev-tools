@@ -1,7 +1,5 @@
 <?php
 
-use Barryvdh\LaravelIdeHelper\ClassMapGenerator;
-use Barryvdh\LaravelIdeHelper\Console\ModelsCommand;
 use Illuminate\Support\Facades\Artisan;
 
 /**
@@ -14,7 +12,8 @@ function handle()
 
     if (class_exists(\Spatie\Analytics\Analytics::class)) {
         app()->bind(\Spatie\Analytics\Analytics::class, function () {
-            return new class () {};
+            return new class () {
+            };
         });
     }
 

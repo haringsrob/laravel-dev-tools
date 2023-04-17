@@ -37,4 +37,6 @@ if ($argv[2] === 'command') {
     include_once $baseDir . '/app/helpers/SubCommands/Routes.php';
 } elseif ($argv[2] === 'helpers') {
     include_once $baseDir . '/app/helpers/SubCommands/Helpers.php';
+} elseif ($argv[2] === 'models') {
+    include_once $baseDir . '/app/helpers/SubCommands/Models.php';
 }

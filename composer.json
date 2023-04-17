@@ -17,15 +17,16 @@
     ],
     "require": {
         "php": "^8.0",
+        "barryvdh/laravel-ide-helper": "^2.13",
+        "illuminate/support": "^9.3|^10",
+        "illuminate/view": "^9.3|^10",
+        "laravel-zero/framework": "^8.0|^9.0|^10.0",
         "livewire/livewire": "^2.10",
         "phpactor/language-server": "^1.1",
         "phpactor/text-document": "^1.2",
         "spatie/invade": "^1.0",
-        "wa72/simplelogger": "^1.1",
-        "barryvdh/laravel-ide-helper": "^2.13",
-        "illuminate/support": "^9.3|^10",
-        "illuminate/view": "^9.3|^10",
-        "laravel-zero/framework": "^8.0|^9.0|^10.0"
+        "spatie/laravel-model-info": "^1.4",
+        "wa72/simplelogger": "^1.1"
     },
     "require-dev": {
         "mockery/mockery": "^1.4.4",

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Str;
+use Spatie\ModelInfo\Attributes\Attribute;
 use Spatie\ModelInfo\ModelInfo;
 use Composer\ClassMapGenerator\ClassMapGenerator;
 
@@ -15,7 +16,6 @@ function handle()
     $models = [];
     foreach ($dirs as $dirOrFile) {
         if (!is_dir($dirOrFile)) {
-            $this->error("Cannot locate directory '{$dirOrFile}'");
             continue;
         }
 
@@ -49,6 +49,7 @@ function handle()
                     'name' => $attribute->name,
                     'type' => $attribute->phpType,
                     'cast' => $attribute->cast,
+                    'magicMethods' => buildMagicMethodsForProperty($attribute),
                 ];
             }
 
@@ -57,7 +58,7 @@ function handle()
                     'name' =>  $relation->name,
                     'type' =>  $relation->type,
                     'related' =>  $relation->related,
-                    'property' => Str::snake($relation->name)
+                    'property' => $relation->name
                 ];
             }
 
@@ -73,6 +74,18 @@ function handle()
     }
 
     echo json_encode($detailData);
+}
+
+function buildMagicMethodsForProperty(Attribute $attribute): array
+{
+    $attribute = [
+        'where' . Str::studly($attribute->name) => [
+            'type' => $attribute->phpType,
+            'cast' => $attribute->cast,
+        ]
+    ];
+
+    return $attribute;
 }
 
 handle();

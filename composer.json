@@ -27,8 +27,9 @@
         "spatie/laravel-model-info": "^1.4"
     },
     "require-dev": {
+        "laravel-zero/framework": "^10.0",
         "mockery/mockery": "^1.4.4",
-        "laravel-zero/framework": "^10.0"
+        "symfony/var-dumper": "^6.2"
     },
     "autoload": {
         "psr-4": {

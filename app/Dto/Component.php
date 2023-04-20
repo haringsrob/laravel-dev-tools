@@ -225,6 +225,7 @@ class Component implements SnippetDto
             /*         dd($class->getProperties()); */
             /*     } */
             /* } */
+        } catch (\Error) {
         }
 
         foreach ($this->arguments as $name => $argument) {

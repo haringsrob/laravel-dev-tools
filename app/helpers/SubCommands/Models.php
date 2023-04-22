@@ -60,6 +60,11 @@ function handle()
                     'related' =>  $relation->related,
                     'property' => $relation->name
                 ];
+                $modelAttributes[$relation->name . '_id'] = [
+                    'name' => $relation->name . '_id',
+                    'type' => 'int',
+                    'cast' => null
+                ];
             }
 
 

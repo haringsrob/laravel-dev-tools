@@ -28,6 +28,7 @@ function handle()
         [
             'filename' =>  $targetDir . DIRECTORY_SEPARATOR . 'facades.php',
             '--helpers' => true,
+            '-M' => true, // Use in memory db.
         ]
     );
     Artisan::call(

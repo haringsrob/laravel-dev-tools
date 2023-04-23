@@ -15,6 +15,11 @@ unset($argv[1]);
 require $projectPath . '/vendor/autoload.php';
 
 $app = require_once $projectPath . '/bootstrap/app.php';
+
+if ($app === true) {
+    echo json_encode([]);
+    return;
+}
 $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
 
 $kernel->bootstrap();

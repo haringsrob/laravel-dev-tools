@@ -23,8 +23,8 @@
         "livewire/livewire": "^2.10",
         "phpactor/language-server": "^1.1",
         "phpactor/text-document": "^1.2",
-        "spatie/invade": "^1.0",
-        "spatie/laravel-model-info": "^1.4"
+        "soyhuce/next-ide-helper": "^0.13.1",
+        "spatie/invade": "^1.0"
     },
     "require-dev": {
         "laravel-zero/framework": "^10.0",

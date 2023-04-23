@@ -16,9 +16,13 @@ Livewire:
 - [x] Diagnostics on missing wire:model rules/parameters or missing wire:click methods.
 - [x] Diagnostics on missing components + action to create it.
 
-Other (plans):
-- [ ] Suggestions for config()
-- [ ] view() suggestions, and goto definition for view() calls.
+Extractors for (external) lsp:
+- [x] routes() autocomplete
+- [x] views() autocomplete
+- [x] container autocomplete
+- [ ] config() autocomplete
+- [x] Php autocomplete in blade
+- [x] Model information, relation builders
 
 ## Demo
 
@@ -50,6 +54,8 @@ Your application needs to be bootable. This LSP will run commands in your codeba
 information it needs. (Much like running laravel-ide-helper).
 
 ### Vscode
+
+!! Not up to date, so best to build it yourself for now.
 
 Install Name: [laravel-blade syntax](https://marketplace.visualstudio.com/items?itemName=cjhowe7.laravel-blade)
 
@@ -120,9 +126,11 @@ It uses [phpactor/language-server](https://github.com/phpactor/language-server) 
 
 Other packages used are:
 - [Spatie invade](https://github.com/spatie/invade)
+    - To extract information out of laravel's core.
 - [Laravel](https://github.com/laravel/framework)
-- [SimpleLogger](https://github.com/wa72/simplelogger)
-- [Laravel model info](https://github.com/spatie/laravel-model-info)
+    - Best php framework ever, and needed for it's types.
+- [Soyhuce/next-ide-helper](https://github.com/Soyhuce/next-ide-helper)
+    - To extract model information.
 
 ## Todo's
 

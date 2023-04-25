@@ -31,9 +31,6 @@ function handle()
             '-M' => true, // Use in memory db.
         ]
     );
-    Artisan::call(
-        'ide-helper:eloquent'
-    );
 }
 
 handle();

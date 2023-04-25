@@ -73,6 +73,7 @@ function handle()
             'relations' => $modelRelations,
             'attributes' => $modelAttributes,
             'scopes' => $modelScopes,
+            'softDeletes' => $model->softDeletes()
         ];
     }
 

@@ -147,7 +147,7 @@ class Component implements SnippetDto
         return self::TYPE_COMPONENT;
     }
 
-    public function toArray(): array
+    public function toArray(array $viewUsageMapping = []): array
     {
         return [
             'name' => $this->name,
@@ -162,6 +162,7 @@ class Component implements SnippetDto
             'type' => $this->getType(),
             'wireProps' => $this->wireProps,
             'wireMethods' => $this->wireMethods,
+            'used_in' => $viewUsageMapping[$this->name] ?? [],
         ];
     }
 

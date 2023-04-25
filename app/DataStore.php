@@ -98,7 +98,7 @@ class DataStore
     private function getDirectivesFromData(array $data): Collection
     {
         $collection = collect([]);
-        foreach ($data as $item) {
+        foreach ($data['directives'] as $item) {
             if (in_array($item['type'], [SnippetDto::TYPE_DIRECTIVE])) {
                 $collection->add(new BladeDirectiveData(
                     name: $item['name'],
@@ -116,7 +116,7 @@ class DataStore
     private function getComponentsFromData(array $data): Collection
     {
         $collection = collect([]);
-        foreach ($data as $item) {
+        foreach ([...$data['livewire'], ...$data['blade']] as $item) {
             if (in_array($item['type'], [SnippetDto::TYPE_COMPONENT, SnippetDto::TYPE_LIVEWIRE])) {
                 $collection->add(new BladeComponentData(
                     name: $item['name'],

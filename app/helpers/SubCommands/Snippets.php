@@ -15,6 +15,8 @@ include_once(__DIR__ . '/../../Reflection/ReflectionClass.php');
 include_once(__DIR__ . '/../../Reflection/ReflectionMethod.php');
 include_once(__DIR__ . '/../../Reflection/StringHelper.php');
 
+$GLOBALS['viewUsageMapping'] = [];
+
 /**
  * Execute the console command.
  *
@@ -22,18 +24,32 @@ include_once(__DIR__ . '/../../Reflection/StringHelper.php');
  */
 function handle()
 {
+    $mapping = [];
     $arrayFinal = [];
+
+    $arrayFinal['viewUsageMapping'] = $viewUsageMapping = getAllViewsUsageMap();
+
     foreach (getDirectives() as $final) {
-        $arrayFinal[$final->name] = $final->toArray();
+        $arrayFinal['directives'][$final->name] = $final->toArray();
     }
 
     foreach (getLivewireComponents() as $final) {
-        $arrayFinal[$final->name] = $final->toArray();
+        $arrayFinal['livewire'][$final->name] = $final->toArray($viewUsageMapping);
+
+        foreach ($final->views as $view) {
+            $mapping[$view] = $final->name;
+        }
     }
 
     foreach (getBladeComponents() as $final) {
-        $arrayFinal[$final->name] = $final->toArray();
+        $arrayFinal['blade'][$final->name] = $final->toArray($viewUsageMapping);
+
+        foreach ($final->views as $view) {
+            $mapping[$view] = $final->name;
+        }
     }
+
+    $arrayFinal['mapping'] = $mapping;
 
     echo json_encode($arrayFinal);
 }
@@ -254,6 +270,34 @@ function classesInNamespace($namespace)
         $theClasses[] = end($theParts);
     }
     return $theClasses;
+}
+
+function getAllViewsUsageMap(): array
+{
+    $list = [];
+    $dir = new RecursiveDirectoryIterator(base_path('app'));
+    foreach (new RecursiveIteratorIterator($dir) as $filename => $file) {
+        if (is_dir($file)) {
+            continue;
+        }
+        $content = file_get_contents($file->getPathname());
+
+        $matches = [];
+        preg_match_all('/view\((?:\'|")([\w\-:.]*)(?:\'|")(,|\))/', $content, $matches, PREG_OFFSET_CAPTURE);
+
+        if ($matches[0] === []) {
+            continue;
+        }
+
+        foreach ($matches[1] as $match) {
+            $list[$match[0]][] = [
+                'file' => $file->getpathname(),
+                'pos' => $match[1]
+            ];
+        }
+    }
+
+    return $list;
 }
 
 function getViewsFiles(): array

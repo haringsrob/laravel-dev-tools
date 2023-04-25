@@ -5,7 +5,6 @@ use App\Dto\Directive;
 use App\Reflection\ReflectionClass;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\Support\Facades\File;
-use function Safe\file_get_contents;
 
 include_once(__DIR__ . '/../../Dto/Snippet.php');
 include_once(__DIR__ . '/../../Dto/SnippetDto.php');
@@ -36,7 +35,7 @@ function handle()
         $arrayFinal[$final->name] = $final->toArray();
     }
 
-    echo json_encode($arrayFinal, JSON_PRETTY_PRINT);
+    echo json_encode($arrayFinal);
 }
 
 /**

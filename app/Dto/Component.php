@@ -2,6 +2,7 @@
 
 namespace App\Dto;
 
+use Illuminate\Support\Facades\Blade;
 use InvalidArgumentException;
 use ReflectionNamedType;
 use ReflectionUnionType;

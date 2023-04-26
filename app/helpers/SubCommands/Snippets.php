@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\Support\Facades\File;
 use Illuminate\View\Factory;
+use Symfony\Component\VarDumper\VarDumper;
 
 include_once(__DIR__ . '/../../Dto/Snippet.php');
 include_once(__DIR__ . '/../../Dto/SnippetDto.php');
@@ -283,10 +284,15 @@ function getHinted() {
 
             foreach ($files as $file) {
                 if (str_ends_with($file->getPathname(), '.blade.php')) {
-                    $cleanedPath = str_replace([realpath($path) . '/', '.blade.php'], '', $file->getPathname());
+                    if ($file->getFilename() === 'index.blade.php') {
+                        $name = Str::afterLast($file->getPath(), '/');
+                        $list[$prefix . $name] = $file->getPathname();
+                    } else {
+                        $cleanedPath = str_replace([realpath($path) . '/', '.blade.php'], '', $file->getPathname());
 
-                    if (str_starts_with($cleanedPath, 'components/')) {
-                        $list[$prefix . str_replace('/', '.', Str::replaceFirst('components/', '', $cleanedPath))] = $file->getPathname();
+                        if (str_starts_with($cleanedPath, 'components/')) {
+                            $list[$prefix . str_replace('/', '.', Str::replaceFirst('components/', '', $cleanedPath))] = $file->getPathname();
+                        }
                     }
                 }
             }

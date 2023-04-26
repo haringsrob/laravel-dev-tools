@@ -2,9 +2,12 @@
 
 use App\Dto\Component;
 use App\Dto\Directive;
+use App\Logger;
 use App\Reflection\ReflectionClass;
+use Illuminate\Support\Str;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\Support\Facades\File;
+use Illuminate\View\Factory;
 
 include_once(__DIR__ . '/../../Dto/Snippet.php');
 include_once(__DIR__ . '/../../Dto/SnippetDto.php');
@@ -28,6 +31,14 @@ function handle()
     $arrayFinal = [];
 
     $arrayFinal['viewUsageMapping'] = $viewUsageMapping = getAllViewsUsageMap();
+
+    foreach (getHinted() as $final) {
+        $arrayFinal['blade'][$final->name] = $final->toArray($viewUsageMapping);
+
+        foreach ($final->views as $view) {
+            $mapping[$view] = $final->name;
+        }
+    }
 
     foreach (getDirectives() as $final) {
         $arrayFinal['directives'][$final->name] = $final->toArray();
@@ -258,6 +269,43 @@ function getBladeComponents(): array
     return $data;
 }
 
+function getHinted() {
+    /** @var Factory $view */
+    $view = app()->make('view');
+    $finder = $view->getFinder();
+        $list = [];
+    foreach (invade($finder)->hints as $key => $paths) {
+        $prefix = 'x-' . $key . '::';
+
+        foreach ($paths as $path) {
+
+            $files = File::allFiles(realpath($path));
+
+            foreach ($files as $file) {
+                if (str_ends_with($file->getPathname(), '.blade.php')) {
+                    $cleanedPath = str_replace([realpath($path) . '/', '.blade.php'], '', $file->getPathname());
+
+                    if (str_starts_with($cleanedPath, 'components/')) {
+                        $list[$prefix . str_replace('/', '.', Str::replaceFirst('components/', '', $cleanedPath))] = $file->getPathname();
+                    }
+                }
+            }
+        }
+
+    }
+    $data = [];
+
+    foreach ($list as $name => $file) {
+        $data[] = new Component(
+            name: $name,
+            file: $file,
+            views: [$file],
+        );
+    }
+
+    return $data;
+}
+
 function classesInNamespace($namespace)
 {
     $namespace .= '\\';
@@ -272,10 +320,14 @@ function classesInNamespace($namespace)
     return $theClasses;
 }
 
-function getAllViewsUsageMap(): array
+function getAllViewsUsageMap(?string $path = null): array
 {
     $list = [];
-    $dir = new RecursiveDirectoryIterator(base_path('app'));
+    if (!$path) {
+        $path = base_path('app');
+    }
+
+    $dir = new RecursiveDirectoryIterator($path);
     foreach (new RecursiveIteratorIterator($dir) as $filename => $file) {
         if (is_dir($file)) {
             continue;

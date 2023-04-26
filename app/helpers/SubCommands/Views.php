@@ -12,10 +12,10 @@ function handle()
 {
     $filesystem = new Filesystem();
     $views = [];
-    foreach (app('view')->getFinder()->getPaths() as $path) {
+    foreach (app()->make('view')->getFinder()->getPaths() as $path) {
         $views = array_merge($views, getViews($path, $filesystem));
     }
-    foreach (app('view')->getFinder()->getHints() as $namespace => $paths) {
+    foreach (app()->make('view')->getFinder()->getHints() as $namespace => $paths) {
         foreach ($paths as $path) {
             $views = array_merge($views, getViews($path, $filesystem, $namespace, '::'));
         }
@@ -37,8 +37,8 @@ function getViewsFromDirectory($directories, $filesystem, $parentDirectory = nul
                 $filesystem,
                 $viewDirectory
             );
-            if ($childDirectoryViews) {
-                $views[] = $childDirectoryViews;
+            if ($childDirectoryViews !== []) {
+                $views = [...$views, ...$childDirectoryViews];
             }
         }
         foreach ($filesystem->files($directory) as $file) {
@@ -47,10 +47,11 @@ function getViewsFromDirectory($directories, $filesystem, $parentDirectory = nul
             }
             if (strpos($file->getBaseName(), '.blade.php')) {
                 $fileName = str_replace('.blade.php', '', $file->getBaseName());
-                $views[] = $viewDirectory . '.' . $fileName;
+                $views[$viewDirectory . '.' . $fileName] = $file->getPathname();
             }
         }
     }
+
     return $views;
 }
 
@@ -68,9 +69,11 @@ function getViews($path, $filesystem, $parentDirectory = null, $deluminator = '.
                 $view = $parentDirectory . $deluminator;
             }
             $view .= $fileName;
-            $views = array_merge($views, [$view]);
+            $views[$view] = $file->getPathname();
         }
     }
+
+    return [...$views, ...getViewsFromDirectory($filesystem->directories($path), $filesystem)];
     return array_merge(
         $views,
         Arr::flatten(getViewsFromDirectory($filesystem->directories($path), $filesystem))

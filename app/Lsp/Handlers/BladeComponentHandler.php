@@ -31,6 +31,7 @@ use Phpactor\LanguageServerProtocol\Range;
 use Phpactor\LanguageServerProtocol\TextDocumentIdentifier;
 use Phpactor\TextDocument\TextDocumentUri;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\VarDumper\VarDumper;
 
 class BladeComponentHandler implements Handler, CanRegisterCapabilities
 {
@@ -406,6 +407,11 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             }
             $char = $textDocument->text[$offsetRight];
 
+            if ($char === PHP_EOL) {
+                $foundEnd = true;
+                continue;
+            }
+
             if (in_array($char, $endMatchers)) {
                 $foundEnd = true;
                 $fullEndIndex = $offsetRight;
@@ -445,6 +451,8 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             PositionConverter::intByteOffsetToPosition($searchRangeStart, $textDocument->text),
             PositionConverter::intByteOffsetToPosition($searchRangeEnd, $textDocument->text)
         );
+
+        VarDumper::dump($search);
 
         return new CompletionRequest(
             search: $search,

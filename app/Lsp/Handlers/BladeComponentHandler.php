@@ -452,8 +452,6 @@ class BladeComponentHandler implements Handler, CanRegisterCapabilities
             PositionConverter::intByteOffsetToPosition($searchRangeEnd, $textDocument->text)
         );
 
-        VarDumper::dump($search);
-
         return new CompletionRequest(
             search: $search,
             element: $element,

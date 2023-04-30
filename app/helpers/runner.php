@@ -20,6 +20,9 @@ if ($app === true) {
     echo json_encode([]);
     return;
 }
+
+// Force the cache driver to be array.
+$_ENV['CACHE_DRIVER'] = 'array';
 $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
 
 $kernel->bootstrap();

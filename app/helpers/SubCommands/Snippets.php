@@ -75,7 +75,7 @@ function getLivewireComponents(): array
     if (class_exists(\Livewire\LivewireComponentsFinder::class)) {
         try {
             $livewire = app('livewire');
-        } catch (Exception) {
+        } catch (Exception $e) {
             return [];
         }
 

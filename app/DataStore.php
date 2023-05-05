@@ -9,6 +9,7 @@ use App\Util\Path;
 use Illuminate\Support\Collection;
 use Phar;
 use Phpactor\LanguageServerProtocol\TextDocumentItem;
+use Symfony\Component\VarDumper\VarDumper;
 
 class DataStore
 {
@@ -116,7 +117,7 @@ class DataStore
     private function getComponentsFromData(array $data): Collection
     {
         $collection = collect([]);
-        foreach ([...$data['livewire'], ...$data['blade']] as $item) {
+        foreach ([...$data['livewire'] ?? [], ...$data['blade'] ?? []] as $item) {
             if (in_array($item['type'], [SnippetDto::TYPE_COMPONENT, SnippetDto::TYPE_LIVEWIRE])) {
                 $collection->add(new BladeComponentData(
                     name: $item['name'],

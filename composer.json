@@ -20,10 +20,10 @@
         "barryvdh/laravel-ide-helper": "^2.13",
         "illuminate/support": "^9.3|^10",
         "illuminate/view": "^9.3|^10",
-        "livewire/livewire": "^2.10",
+        "livewire/livewire": "^3",
         "phpactor/language-server": "^1.1",
         "phpactor/text-document": "^1.2",
-        "soyhuce/next-ide-helper": "^0.13.1",
+        "soyhuce/next-ide-helper": "^0.14.0",
         "spatie/invade": "^1.0"
     },
     "require-dev": {

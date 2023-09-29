@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Soyhuce\NextIdeHelper\Domain\Models\Actions\FindModels;
 use Soyhuce\NextIdeHelper\Domain\Models\Actions\ResolveModelAttributes;
@@ -16,6 +17,9 @@ use Composer\ClassMapGenerator\ClassMapGenerator;
 
 function handle()
 {
+    Config::set('database.default', 'sqlite');
+    Config::set('database.connections.sqlite.database', ':memory:');
+
     $detailData = [];
 
     // @todo expand this to be configurable.
@@ -30,7 +34,11 @@ function handle()
 
     foreach (modelResolvers($models) as $resolver) {
         foreach ($models as $model) {
-            $resolver->execute($model);
+            try {
+                $resolver->execute($model);
+            }
+            catch(ArgumentCountError) {
+            }
         }
     }
 

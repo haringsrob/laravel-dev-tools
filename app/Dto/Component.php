@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Blade;
 use InvalidArgumentException;
 use ReflectionNamedType;
 use ReflectionUnionType;
+use Throwable;
 
 class Component implements SnippetDto
 {
@@ -71,7 +72,14 @@ class Component implements SnippetDto
 
     private function getClassDoc(): ?string
     {
-        if (!$this->class || !class_exists($this->class)) {
+        if (!$this->class) {
+            return null;
+        }
+
+
+        try {
+            class_exists($this->class);
+        } catch(Throwable) {
             return null;
         }
 
@@ -102,7 +110,13 @@ class Component implements SnippetDto
      */
     private function getPossibleAttributes(): array
     {
-        if (!$this->class || !class_exists($this->class)) {
+        if (!$this->class) {
+            return [];
+        }
+
+        try {
+            class_exists($this->class);
+        } catch(Throwable) {
             return [];
         }
 
@@ -169,9 +183,12 @@ class Component implements SnippetDto
 
     private function getPossibleWireMethods(): array
     {
-        if (!class_exists($this->class)) {
+        try {
+            class_exists($this->class);
+        } catch(Throwable) {
             return [];
         }
+
         $class = new \ReflectionClass($this->class);
         $result = [];
         $ignore = ['mount', 'render', 'bootIfNotBooted'];

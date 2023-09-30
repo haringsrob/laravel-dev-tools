@@ -72,17 +72,57 @@ function handle()
 function getLivewireComponents(): array
 {
     $data = [];
-    if (class_exists(\Livewire\LivewireComponentsFinder::class)) {
+
+    // Livewire v3.
+    if (class_exists(\Livewire\Mechanisms\ComponentRegistry::class)) {
+        $registry = app()->make(\Livewire\Mechanisms\ComponentRegistry::class);
+
+        $paths = [base_path('app/Http/Livewire'), base_path('app/Livewire')];
+
+        foreach ($paths as $path) {
+            $disk = \Illuminate\Support\Facades\Storage::build([
+                'driver' => 'local',
+                'root' => $path,
+            ]);
+
+            foreach ($disk->allFiles() as $file) {
+                // Conver the filename to a "component name".
+                $file = str_replace('.php', '', $file);
+                $name = invade($registry)->classToName($file);
+                $class = invade($registry)->nameToClass($name);
+
+                $data[] = new Component(
+                    name: "livewire:$name",
+                    file: getClassFile($class),
+                    class: $class,
+                    views: extractViewNames($class),
+                    livewire: true
+                );
+            }
+        }
+
+    }
+    // Livewire v2. Not sure if this still works.
+    elseif (class_exists(\Livewire\LivewireComponentsFinder::class)) {
         try {
             $livewire = app('livewire');
         } catch (Exception $e) {
             return [];
         }
 
-        // Todo
-        $livewireAliased = $livewire->getComponentAliases();
-
         if (File::exists(base_path('app/Http/Livewire'))) {
+            $livewireComponentFinder = app(\Livewire\LivewireComponentsFinder::class);
+            foreach ($livewireComponentFinder->getManifest() as $name => $class) {
+                $data[] = new Component(
+                    name: "livewire:$name",
+                    file: getClassFile($class),
+                    class: $class,
+                    views: extractViewNames($class),
+                    livewire: true
+                );
+            }
+        }
+        if (File::exists(base_path('app/Livewire'))) {
             $livewireComponentFinder = app(\Livewire\LivewireComponentsFinder::class);
             foreach ($livewireComponentFinder->getManifest() as $name => $class) {
                 $data[] = new Component(
@@ -385,9 +425,12 @@ function getViewsFiles(): array
  */
 function extractViewNames(string $class): array
 {
-    if (!class_exists($class)) {
+    try {
+        class_exists($class);
+    } catch(Throwable) {
         return [];
     }
+
     $class = new \App\Reflection\ReflectionClass($class);
     try {
         $matches = [];
@@ -405,11 +448,13 @@ function getBlade(): BladeCompiler
 
 function getClassFile(string $class): ?string
 {
-    if (class_exists($class)) {
+    try {
         $class = new \ReflectionClass($class);
         return $class->getFileName();
     }
-    return null;
+    catch (Throwable) {
+        return null;
+    }
 }
 
 function getPossibleAttributes(string $class): array

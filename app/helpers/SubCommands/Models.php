@@ -14,11 +14,114 @@ use Soyhuce\NextIdeHelper\Domain\Models\Actions\ResolveModelAttributesFromGetter
 use Soyhuce\NextIdeHelper\Domain\Models\Collections\ModelCollection;
 use Soyhuce\NextIdeHelper\Domain\Models\Entities\Attribute as SoyhuceAttribute;
 use Composer\ClassMapGenerator\ClassMapGenerator;
+use Illuminate\Support\Facades\Schema;
+use \Illuminate\Database\SQLiteConnection;
+use \Illuminate\Database\Connection;
+use \Illuminate\Database\Schema\SQLiteBuilder;
+use \Illuminate\Database\Schema\Blueprint;
+use \Illuminate\Support\Fluent;
+
+function injectMsyqlModifications(): void {
+    \Illuminate\Database\Connection::resolverFor('sqlite', function ($connection, $database, $prefix, $config) {
+        return new class($connection, $database, $prefix, $config) extends SQLiteConnection {
+            public function getSchemaBuilder()
+            {
+                /** @var SQLiteConnection $this */
+                if ($this->schemaGrammar === null) {
+                    $this->useDefaultSchemaGrammar();
+                }
+                return new class($this) extends SQLiteBuilder {
+                    protected function createBlueprint($table, Closure $callback = null)
+                    {
+                        return new class($table, $callback) extends Blueprint {
+                            // This fixes the sqlite issues for multiple dropcolumns.
+                            protected function ensureCommandsAreValid(Connection $connection) {
+                                /** @var Blueprint $this */
+                                if ($this->commandsNamed(['dropColumn'])->count() > 1) {
+                                    // If they are the same we merge them.
+                                    $first = null;
+                                    /** @var $drop Fluent */
+                                    foreach ($this->commandsNamed(['dropColumn']) as $drop) {
+                                        if ($first === null) {
+                                            $first = $drop;
+                                        }
+                                        else {
+                                            $first['columns'] = [...$first->get('columns'), ...$drop->get('columns')];
+                                        }
+                                    }
+
+                                    // Now remove them all except our first entry.
+                                    $hadFirst = false;
+                                    foreach ($this->commands as $key => $command) {
+                                        if ($command->get('name') === 'dropColumn') {
+                                            if (!$hadFirst) {
+                                                $hadFirst = true;
+                                            }
+                                            else {
+                                                unset($this->commands[$key]);
+                                            }
+                                        }
+                                    }
+                                }
+                                return;
+                            }
+                            public function dropForeign($index)
+                            {
+                                return new Fluent();
+                            }
+                        };
+                    }
+                };
+            }
+        };
+    });
+}
+
 
 function handle()
 {
     Config::set('database.default', 'sqlite');
     Config::set('database.connections.sqlite.database', ':memory:');
+
+    injectMsyqlModifications();
+
+
+
+    // The logic below will take a mysql-schema if it exists and converts it into a much simpler structure.
+    // This structure we can use to insert into the in-memory database so that we can parse the model information.
+    if (file_exists(database_path('schema/mysql-schema.sql'))) {
+        $parser = new iamcal\SQLParser();
+        $parser->parse(file_get_contents(database_path('schema/mysql-schema.sql')));
+
+        foreach ($parser->tables as $tableInfo) {
+            Schema::create($tableInfo['name'], function (\Illuminate\Database\Schema\Blueprint $table) use ($tableInfo) {
+                foreach ($tableInfo['fields'] as $field) {
+                    $name = $field['name'];
+
+                    if ($name === 'id') {
+                        $table->id();
+                    }
+
+                    else {
+                        $function = match($field['type']) {
+                            "DATETIME" => "date",
+                            "BIGINT", "INT" => "integer",
+                            default => 'string'
+                        };
+                        $fieldI = $table->{$function}($name);
+
+                        if ($field['null']) {
+                            $fieldI->nullable();
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // Once we "normalized" the migration schema, we should be able to migrate directly into sqlite.
+    Artisan::call('migrate');
+
 
     $detailData = [];
 

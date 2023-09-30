@@ -18,6 +18,7 @@
     "require": {
         "php": "^8.1",
         "barryvdh/laravel-ide-helper": "^2.13",
+        "iamcal/sql-parser": "^0.4.0",
         "illuminate/support": "^9.3|^10",
         "illuminate/view": "^9.3|^10",
         "livewire/livewire": "^3",

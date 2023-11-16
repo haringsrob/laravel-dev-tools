@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\Schema\Grammars\SQLiteGrammar;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Soyhuce\NextIdeHelper\Domain\Models\Actions\FindModels;
@@ -24,6 +25,35 @@ use \Illuminate\Support\Fluent;
 function injectMsyqlModifications(): void {
     \Illuminate\Database\Connection::resolverFor('sqlite', function ($connection, $database, $prefix, $config) {
         return new class($connection, $database, $prefix, $config) extends SQLiteConnection {
+
+            public function getDefaultSchemaGrammar() {
+                $grammarClass = new class extends SQLiteGrammar {
+                    public function compileRenameIndex(Blueprint $blueprint, Fluent $command, $connection) {
+                        try {
+                            parent::compileRenameIndex($blueprint, $command, $connection);
+                        }
+                        catch (Exception $e) {
+                            return [];
+                        }
+                    }
+                };
+
+                return (new $grammarClass())->setConnection($this);
+            }
+
+            public function runQueryCallback($query, $bindings, Closure $callback) {
+                if (Str::startsWith($query, 'SET')) {
+                    return null;
+                }
+
+                try {
+                    return SQLiteConnection::runQueryCallback($query,$bindings, $callback);
+                }
+                catch (Exception $e) {
+                    return null;
+                }
+            }
+
             public function getSchemaBuilder()
             {
                 /** @var SQLiteConnection $this */
@@ -84,8 +114,6 @@ function handle()
     Config::set('database.connections.sqlite.database', ':memory:');
 
     injectMsyqlModifications();
-
-
 
     // The logic below will take a mysql-schema if it exists and converts it into a much simpler structure.
     // This structure we can use to insert into the in-memory database so that we can parse the model information.

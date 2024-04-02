@@ -31,6 +31,12 @@ class BladeComponentData
         return false;
     }
 
+    // Check if the view file is from this component.
+    public function matchesClass(string $className): bool
+    {
+        return $this->class === $className;
+    }
+
     public function getHoverData(): string
     {
         return $this->doc ?? $this->getFile() ?? $this->class ?? '';

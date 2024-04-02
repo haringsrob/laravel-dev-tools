@@ -31,6 +31,17 @@ class LivewireLspValidate extends BaseLspValidator
                 ]);
             }
 
+            $nestedProps = [];
+            foreach ($component->wireProps as $prop => $className) {
+                $nestedComponent = $this->store->findComponentForClass('\\' . $className);
+                if (!$nestedComponent) {
+                    continue;
+                }
+                foreach (array_keys($nestedComponent->wireProps) as $nestedProp) {
+                    $nestedProps[] = $prop . '.' . $nestedProp;
+                }
+            }
+
             $wireModels = $workableArray
                 ->filter(function ($item) {
                     // Only get models.
@@ -39,7 +50,12 @@ class LivewireLspValidate extends BaseLspValidator
                 ->filter(function ($item) use ($component) {
                     // Check if they are in the list.
                     return !array_key_exists($item['name'], $component->wireProps);
+                })
+                ->filter(function ($item) use ($nestedProps) {
+                    // Check if they are nested.
+                    return !in_array($item['name'], $nestedProps);
                 });
+
 
             foreach ($wireModels as $missingWireable) {
                 $errors[] = new DiagnosticError(

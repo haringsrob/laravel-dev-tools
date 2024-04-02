@@ -70,6 +70,19 @@ class DataStore
         return $matchingComponent;
     }
 
+    public function findComponentForClass(string $className): ?BladeComponentData
+    {
+        $matchingComponent = null;
+
+        foreach ($this->availableComponents as $component) {
+            if ($component->matchesClass($className)) {
+                $matchingComponent = $component;
+                break;
+            }
+        }
+        return $matchingComponent;
+    }
+
     public function refreshAvailableComponents(bool $force = false): Collection
     {
         if (self::$inprogress === false && ($this->availableComponents->isEmpty() || $force)) {
